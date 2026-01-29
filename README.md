@@ -47,7 +47,7 @@ cargo install sword_tools_chirho
 ### From Source
 
 ```bash
-git clone https://github.com/hallelujah-chirho/rsword-chirho.git
+git clone https://github.com/loveJesus/rsword-chirho.git
 cd rsword-chirho
 cargo build --release
 ```

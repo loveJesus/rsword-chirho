@@ -8,7 +8,9 @@ version.workspace = true
 edition.workspace = true
 authors.workspace = true
 license.workspace = true
+repository.workspace = true
 description = "CLI tools for SWORD Bible modules"
+readme = "README.md"
 keywords = ["bible", "sword", "cli", "diatheke"]
 categories = ["command-line-utilities"]
 

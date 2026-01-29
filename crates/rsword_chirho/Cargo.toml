@@ -8,7 +8,9 @@ version.workspace = true
 edition.workspace = true
 authors.workspace = true
 license.workspace = true
+repository.workspace = true
 description = "Core SWORD module library in pure Rust"
+readme = "README.md"
 keywords = ["bible", "sword", "scripture", "module"]
 categories = ["text-processing"]
 

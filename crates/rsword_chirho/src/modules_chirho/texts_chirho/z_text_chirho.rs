@@ -45,7 +45,11 @@ impl ZTextChirho {
         let comp_type_chirho = parse_compression_type_chirho(comp_type_str_chirho);
         let compressor_chirho = create_compressor_chirho(comp_type_chirho);
 
-        let mut storage_chirho = ZVerseChirho::open_chirho(&path_chirho, compressor_chirho)?;
+        let mut storage_chirho = ZVerseChirho::open_with_comp_type_chirho(
+            &path_chirho,
+            compressor_chirho,
+            comp_type_chirho,
+        )?;
 
         // Get block type from config
         let block_type_chirho = match config_chirho.get_chirho("BlockType") {
@@ -283,22 +287,23 @@ mod tests_chirho {
         block_idx_chirho.write_u32_sword_chirho(block0_text_chirho.len() as u32).unwrap();
 
         // Write OT verse index (10 bytes per verse)
-        // According to versification, Genesis 1:1 is at index 3, Genesis 1:2 at index 4
+        // According to versification, Genesis 1:1 is at index 4, Genesis 1:2 at index 5
+        // (index 0 = testament intro, 1 = milestone, 2 = book intro, 3 = chapter intro)
         let mut verse_idx_chirho = File::create(mod_path_chirho.join("ot.czv")).unwrap();
 
-        // Write empty entries for indices 0, 1, 2
-        for _ in 0..3 {
+        // Write empty entries for indices 0, 1, 2, 3 (intros)
+        for _ in 0..4 {
             verse_idx_chirho.write_u32_sword_chirho(0).unwrap(); // block_num
             verse_idx_chirho.write_u32_sword_chirho(0).unwrap(); // offset_in_block
             verse_idx_chirho.write_u16_sword_chirho(0).unwrap(); // size
         }
 
-        // Index 3: Genesis 1:1 (block 0, offset 0)
+        // Index 4: Genesis 1:1 (block 0, offset 0)
         verse_idx_chirho.write_u32_sword_chirho(0).unwrap(); // block 0
         verse_idx_chirho.write_u32_sword_chirho(0).unwrap(); // offset 0
         verse_idx_chirho.write_u16_sword_chirho(verse1_chirho.len() as u16).unwrap();
 
-        // Index 4: Genesis 1:2 (block 0, offset after first verse + null)
+        // Index 5: Genesis 1:2 (block 0, offset after first verse + null)
         verse_idx_chirho.write_u32_sword_chirho(0).unwrap(); // block 0
         verse_idx_chirho.write_u32_sword_chirho((verse1_chirho.len() + 1) as u32).unwrap();
         verse_idx_chirho.write_u16_sword_chirho(verse2_chirho.len() as u16).unwrap();

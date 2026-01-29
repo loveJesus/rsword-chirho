@@ -167,3 +167,7 @@ mod tests_chirho {
         assert_eq!(BlockTypeChirho::BookBlocksChirho as u8, 4);
     }
 }
+
+#[cfg(test)]
+mod test_indices_chirho;
+

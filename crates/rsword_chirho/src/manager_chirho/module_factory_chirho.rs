@@ -12,7 +12,7 @@ use std::path::Path;
 use crate::config_chirho::ModuleConfigChirho;
 use crate::error_chirho::{ErrorChirho, ResultChirho};
 use crate::filters_chirho::{
-    FilterChirho, FilterChainChirho, FilterOptionsChirho, StripFilterChirho,
+    FilterChirho, FilterOptionsChirho, StripFilterChirho,
     OsisToHtmlFilterChirho, OsisToPlainFilterChirho,
     ThmlToHtmlFilterChirho, ThmlToPlainFilterChirho,
     GbfToHtmlFilterChirho, GbfToPlainFilterChirho,
@@ -300,7 +300,10 @@ pub fn load_module_chirho(
     let data_path_chirho = config_chirho.data_path_chirho()
         .ok_or_else(|| ErrorChirho::invalid_config_chirho("Missing DataPath"))?;
 
-    let full_path_chirho = base_path_chirho.join(data_path_chirho);
+    // Strip leading "./" from data path if present
+    let clean_data_path_chirho = data_path_chirho.strip_prefix("./").unwrap_or(data_path_chirho);
+
+    let full_path_chirho = base_path_chirho.join(clean_data_path_chirho);
 
     if !full_path_chirho.exists() {
         return Err(ErrorChirho::InvalidModulePathChirho {

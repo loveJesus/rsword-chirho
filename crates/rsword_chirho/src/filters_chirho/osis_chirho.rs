@@ -38,6 +38,7 @@ static OSIS_JESUS_WORDS_REGEX_CHIRHO: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r#"<q who="Jesus"[^>]*>(.*?)</q>"#).unwrap()
 });
 
+#[allow(dead_code)]
 static OSIS_LEMMA_REGEX_CHIRHO: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r#"lemma="([^"]*)""#).unwrap()
 });

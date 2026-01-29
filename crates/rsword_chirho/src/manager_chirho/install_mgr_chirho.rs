@@ -8,6 +8,7 @@ use std::path::{Path, PathBuf};
 
 use crate::config_chirho::{InstallSourceChirho, InstallSourcesConfigChirho};
 use crate::error_chirho::{ErrorChirho, ResultChirho};
+use crate::transport_chirho::{SystemTransportChirho, TransportChirho};
 
 /// SWORD module installation manager.
 ///
@@ -98,25 +99,70 @@ impl InstallMgrChirho {
     }
 
     /// Sync with remote catalog (download module list).
-    pub async fn refresh_source_chirho(&self, source_name_chirho: &str) -> ResultChirho<Vec<String>> {
+    pub fn refresh_source_chirho(&mut self, source_name_chirho: &str) -> ResultChirho<Vec<String>> {
         let source_chirho = self.find_source_chirho(source_name_chirho)
             .ok_or_else(|| ErrorChirho::generic_chirho(format!("Source not found: {}", source_name_chirho)))?;
 
         let url_chirho = format!("{}/mods.d.tar.gz", source_chirho.url_chirho());
 
-        // TODO: Implement actual HTTP download
-        // For now, return empty list
-        Ok(Vec::new())
+        // Download and extract the module list
+        let transport_chirho = SystemTransportChirho::new_chirho();
+        let mods_d_tar_chirho = self.config_dir_chirho.join("mods.d.tar.gz");
+
+        transport_chirho.download_chirho(&url_chirho, &mods_d_tar_chirho)?;
+
+        // Extract the tarball to get module configs
+        let cache_dir_chirho = self.config_dir_chirho.join("remote_mods.d").join(source_name_chirho);
+        std::fs::create_dir_all(&cache_dir_chirho)?;
+
+        // Use tar command to extract
+        let status_chirho = std::process::Command::new("tar")
+            .args(["-xzf", &mods_d_tar_chirho.to_string_lossy(), "-C", &cache_dir_chirho.to_string_lossy()])
+            .status()
+            .map_err(|e_chirho| ErrorChirho::generic_chirho(format!("Failed to extract: {}", e_chirho)))?;
+
+        if !status_chirho.success() {
+            return Err(ErrorChirho::generic_chirho("Failed to extract module list"));
+        }
+
+        // Clean up tarball
+        let _ = std::fs::remove_file(&mods_d_tar_chirho);
+
+        // List modules from cache
+        self.list_remote_modules_chirho(source_name_chirho)
     }
 
     /// List available modules from a source.
     pub fn list_remote_modules_chirho(&self, source_name_chirho: &str) -> ResultChirho<Vec<String>> {
-        // TODO: Read from cached module list
-        Ok(Vec::new())
+        let cache_dir_chirho = self.config_dir_chirho.join("remote_mods.d").join(source_name_chirho);
+
+        // Try mods.d subdirectory first (common extraction pattern)
+        let mods_d_chirho = cache_dir_chirho.join("mods.d");
+        let search_dir_chirho = if mods_d_chirho.exists() { mods_d_chirho } else { cache_dir_chirho };
+
+        if !search_dir_chirho.exists() {
+            return Ok(Vec::new());
+        }
+
+        let mut modules_chirho = Vec::new();
+
+        for entry_chirho in std::fs::read_dir(&search_dir_chirho)? {
+            let entry_chirho = entry_chirho?;
+            let path_chirho = entry_chirho.path();
+
+            if path_chirho.extension().map(|e| e == "conf").unwrap_or(false) {
+                if let Some(stem_chirho) = path_chirho.file_stem() {
+                    modules_chirho.push(stem_chirho.to_string_lossy().to_uppercase());
+                }
+            }
+        }
+
+        modules_chirho.sort();
+        Ok(modules_chirho)
     }
 
     /// Install a module from a source.
-    pub async fn install_module_chirho(
+    pub fn install_module_chirho(
         &self,
         source_name_chirho: &str,
         module_name_chirho: &str,
@@ -124,9 +170,44 @@ impl InstallMgrChirho {
         let source_chirho = self.find_source_chirho(source_name_chirho)
             .ok_or_else(|| ErrorChirho::generic_chirho(format!("Source not found: {}", source_name_chirho)))?;
 
-        // TODO: Implement actual module download and installation
+        // Build the download URL
+        // CrossWire mirrors use: https://crosswire.org/ftpmirror/pub/sword/packages/rawzip/ModuleName.zip
+        // The source URL is https://crosswire.org/ftpmirror/pub/sword/raw
+        // So we need to go up to /pub/sword/ and then to /packages/rawzip/
+        let base_url_chirho = source_chirho.url_chirho();
+        let zip_url_chirho = if base_url_chirho.contains("/raw") {
+            // Standard CrossWire layout
+            format!("{}/packages/rawzip/{}.zip",
+                base_url_chirho.replace("/raw", ""), module_name_chirho)
+        } else {
+            format!("{}/packages/rawzip/{}.zip", base_url_chirho, module_name_chirho)
+        };
 
-        Err(ErrorChirho::generic_chirho("Module installation not yet implemented"))
+        let transport_chirho = SystemTransportChirho::new_chirho();
+
+        // Download the module zip
+        let temp_zip_chirho = self.config_dir_chirho.join(format!("{}.zip", module_name_chirho));
+        eprintln!("Downloading from {}...", zip_url_chirho);
+        transport_chirho.download_chirho(&zip_url_chirho, &temp_zip_chirho)?;
+
+        // Extract the zip file
+        eprintln!("Extracting...");
+        let status_chirho = std::process::Command::new("unzip")
+            .args(["-o", "-q", &temp_zip_chirho.to_string_lossy(), "-d", &self.install_path_chirho.to_string_lossy()])
+            .status()
+            .map_err(|e_chirho| ErrorChirho::generic_chirho(format!("Failed to extract: {}", e_chirho)))?;
+
+        if !status_chirho.success() {
+            // Clean up temp file
+            let _ = std::fs::remove_file(&temp_zip_chirho);
+            return Err(ErrorChirho::generic_chirho("Failed to extract module zip"));
+        }
+
+        // Clean up temp zip
+        let _ = std::fs::remove_file(&temp_zip_chirho);
+
+        eprintln!("Module {} installed successfully.", module_name_chirho);
+        Ok(())
     }
 
     /// Uninstall a module.

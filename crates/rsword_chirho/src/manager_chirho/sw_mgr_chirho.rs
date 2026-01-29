@@ -177,9 +177,12 @@ impl SwMgrChirho {
         let config_chirho = self.modules_chirho.get(name_chirho)?;
         let data_path_chirho = config_chirho.data_path_chirho()?;
 
+        // Strip leading "./" from data path if present
+        let clean_data_path_chirho = data_path_chirho.strip_prefix("./").unwrap_or(data_path_chirho);
+
         // Find which base path contains this module
         for base_path_chirho in &self.mod_paths_chirho {
-            let full_path_chirho = base_path_chirho.join(data_path_chirho);
+            let full_path_chirho = base_path_chirho.join(clean_data_path_chirho);
             if full_path_chirho.exists() {
                 return Some(full_path_chirho);
             }
@@ -193,9 +196,12 @@ impl SwMgrChirho {
         let config_chirho = self.modules_chirho.get(name_chirho)?;
         let data_path_chirho = config_chirho.data_path_chirho()?;
 
+        // Strip leading "./" from data path if present
+        let clean_data_path_chirho = data_path_chirho.strip_prefix("./").unwrap_or(data_path_chirho);
+
         // Find which base path contains this module
         for base_path_chirho in &self.mod_paths_chirho {
-            let full_path_chirho = base_path_chirho.join(data_path_chirho);
+            let full_path_chirho = base_path_chirho.join(clean_data_path_chirho);
             if full_path_chirho.exists() {
                 return Some(base_path_chirho.clone());
             }

@@ -12,6 +12,10 @@ description = "Core SWORD module library in pure Rust"
 keywords = ["bible", "sword", "scripture", "module"]
 categories = ["text-processing"]
 
+[features]
+default = []
+http-transport = ["reqwest"]
+
 [dependencies]
 thiserror.workspace = true
 anyhow.workspace = true
@@ -27,6 +31,7 @@ serde.workspace = true
 log.workspace = true
 walkdir.workspace = true
 memmap2.workspace = true
+reqwest = { workspace = true, optional = true }
 
 [dev-dependencies]
 tempfile = "3.8"

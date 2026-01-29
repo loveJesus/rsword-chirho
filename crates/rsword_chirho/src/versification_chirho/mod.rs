@@ -123,7 +123,8 @@ impl VersificationChirho {
 
     fn build_offsets_chirho(&mut self) {
         // Build OT offsets
-        let mut offset_chirho = 0u32;
+        // Start at 1 to account for testament intro at index 0
+        let mut offset_chirho = 1u32;
         for book_chirho in &self.ot_books_chirho {
             self.ot_offsets_chirho.push(offset_chirho);
             for &max_v_chirho in &book_chirho.verse_max_chirho {
@@ -134,7 +135,8 @@ impl VersificationChirho {
         self.ot_total_chirho = offset_chirho;
 
         // Build NT offsets
-        offset_chirho = 0;
+        // Start at 1 to account for testament intro at index 0
+        offset_chirho = 1;
         for book_chirho in &self.nt_books_chirho {
             self.nt_offsets_chirho.push(offset_chirho);
             for &max_v_chirho in &book_chirho.verse_max_chirho {

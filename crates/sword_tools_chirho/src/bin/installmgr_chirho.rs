@@ -163,11 +163,35 @@ fn run_chirho(args_chirho: ArgsChirho) -> Result<(), Box<dyn std::error::Error>>
         return Ok(());
     }
 
+    // Handle sync config (--sc)
+    if args_chirho.sync_config_chirho {
+        println!("Syncing with remote sources...");
+        // Collect source names first to avoid borrow issues
+        let source_names_chirho: Vec<String> = mgr_chirho.get_sources_chirho()
+            .iter()
+            .map(|s| s.caption_chirho.clone())
+            .collect();
+        for name_chirho in source_names_chirho {
+            println!("  Refreshing {}...", name_chirho);
+            match mgr_chirho.refresh_source_chirho(&name_chirho) {
+                Ok(modules_chirho) => println!("    Found {} modules", modules_chirho.len()),
+                Err(e_chirho) => eprintln!("    Error: {}", e_chirho),
+            }
+        }
+        return Ok(());
+    }
+
     // Handle refresh source
     if let Some(source_name_chirho) = &args_chirho.refresh_source_chirho {
         println!("Refreshing source: {}", source_name_chirho);
-        // TODO: Implement async refresh
-        println!("(Refresh not yet implemented)");
+        match mgr_chirho.refresh_source_chirho(source_name_chirho) {
+            Ok(modules_chirho) => {
+                println!("Found {} modules", modules_chirho.len());
+            }
+            Err(e_chirho) => {
+                eprintln!("Error refreshing source: {}", e_chirho);
+            }
+        }
         return Ok(());
     }
 
@@ -187,7 +211,8 @@ fn run_chirho(args_chirho: ArgsChirho) -> Result<(), Box<dyn std::error::Error>>
             let source_name_chirho = &install_args_chirho[0];
             let module_name_chirho = &install_args_chirho[1];
             println!("Installing {} from {}...", module_name_chirho, source_name_chirho);
-            println!("(Installation not yet implemented)");
+            mgr_chirho.install_module_chirho(source_name_chirho, module_name_chirho)?;
+            println!("Done.");
         }
         return Ok(());
     }

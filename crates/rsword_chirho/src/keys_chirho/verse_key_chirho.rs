@@ -127,7 +127,6 @@ impl VerseKeyChirho {
         // References start with a digit after the book name
 
         let bytes_chirho = text_chirho.as_bytes();
-        let len_chirho = bytes_chirho.len();
 
         // Skip leading numbers and spaces (e.g., "1 John", "2 Kings")
         let mut book_end_chirho = 0;

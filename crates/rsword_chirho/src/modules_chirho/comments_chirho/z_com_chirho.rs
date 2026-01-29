@@ -45,7 +45,11 @@ impl ZComChirho {
         let comp_type_chirho = parse_compression_type_chirho(comp_type_str_chirho);
         let compressor_chirho = create_compressor_chirho(comp_type_chirho);
 
-        let mut storage_chirho = ZVerseChirho::open_chirho(&path_chirho, compressor_chirho)?;
+        let mut storage_chirho = ZVerseChirho::open_with_comp_type_chirho(
+            &path_chirho,
+            compressor_chirho,
+            comp_type_chirho,
+        )?;
 
         // Get block type from config
         let block_type_chirho = match config_chirho.get_chirho("BlockType") {
@@ -315,16 +319,17 @@ mod tests_chirho {
         block_idx_chirho.write_u32_sword_chirho(block0_text_chirho.len() as u32).unwrap();
 
         // Write OT verse index (10 bytes per verse)
+        // Genesis 1:1 is at index 4 (0=testament intro, 1=milestone, 2=book intro, 3=chapter intro)
         let mut verse_idx_chirho = File::create(mod_path_chirho.join("ot.czv")).unwrap();
 
-        // Write empty entries for indices 0, 1, 2
-        for _ in 0..3 {
+        // Write empty entries for indices 0, 1, 2, 3 (intros)
+        for _ in 0..4 {
             verse_idx_chirho.write_u32_sword_chirho(0).unwrap();
             verse_idx_chirho.write_u32_sword_chirho(0).unwrap();
             verse_idx_chirho.write_u16_sword_chirho(0).unwrap();
         }
 
-        // Index 3: Genesis 1:1
+        // Index 4: Genesis 1:1
         verse_idx_chirho.write_u32_sword_chirho(0).unwrap();
         verse_idx_chirho.write_u32_sword_chirho(0).unwrap();
         verse_idx_chirho.write_u16_sword_chirho(verse1_chirho.len() as u16).unwrap();

@@ -7,10 +7,10 @@
 //! zVerse stores compressed blocks of verse text. Each verse has an index
 //! entry pointing to a block and an offset within that block.
 //!
-//! Files:
-//! - `ot.czv` / `nt.czv` - Verse index (10 bytes per verse)
-//! - `ot.czs` / `nt.czs` - Block index (12 bytes per block)
-//! - `ot.czz` / `nt.czz` - Compressed data blocks
+//! Files (extension depends on compression type):
+//! - zlib: `ot.czv` / `nt.czv`, `ot.czs` / `nt.czs`, `ot.czz` / `nt.czz`
+//! - bzip2: `ot.bzv` / `nt.bzv`, `ot.bzs` / `nt.bzs`, `ot.bzz` / `nt.bzz`
+//! - xz: `ot.xzv` / `nt.xzv`, `ot.xzs` / `nt.xzs`, `ot.xzz` / `nt.xzz`
 
 use std::collections::HashMap;
 use std::fs::File;
@@ -20,7 +20,7 @@ use std::path::{Path, PathBuf};
 use crate::byte_order_chirho::{ZBlockIndexChirho, ZVerseIndexChirho, ReadSwordChirho};
 use crate::compression_chirho::CompressorChirho;
 use crate::error_chirho::{ErrorChirho, ResultChirho};
-use crate::BlockTypeChirho;
+use crate::{BlockTypeChirho, CompressionTypeChirho};
 
 /// zVerse compressed storage format.
 pub struct ZVerseChirho {
@@ -47,23 +47,85 @@ pub struct ZVerseChirho {
 }
 
 impl ZVerseChirho {
+    /// Get file extension prefix for a compression type.
+    fn extension_prefix_chirho(comp_type_chirho: CompressionTypeChirho) -> &'static str {
+        match comp_type_chirho {
+            CompressionTypeChirho::ZipChirho => "c",
+            CompressionTypeChirho::Bzip2Chirho => "b",
+            CompressionTypeChirho::XzChirho => "x",
+            CompressionTypeChirho::LzssChirho => "c", // LZSS uses same extension as zlib
+            CompressionTypeChirho::NoneChirho => "c", // Default to zlib extension
+        }
+    }
+
     /// Open an existing zVerse module.
     pub fn open_chirho<P: AsRef<Path>>(
         path_chirho: P,
         compressor_chirho: Box<dyn CompressorChirho>,
     ) -> ResultChirho<Self> {
-        let path_chirho = path_chirho.as_ref().to_path_buf();
+        Self::open_with_comp_type_chirho(path_chirho, compressor_chirho, CompressionTypeChirho::ZipChirho)
+    }
 
-        let ot_verse_idx_chirho = File::open(path_chirho.join("ot.czv")).ok();
-        let nt_verse_idx_chirho = File::open(path_chirho.join("nt.czv")).ok();
-        let ot_block_idx_chirho = File::open(path_chirho.join("ot.czs")).ok();
-        let nt_block_idx_chirho = File::open(path_chirho.join("nt.czs")).ok();
-        let ot_data_chirho = File::open(path_chirho.join("ot.czz")).ok();
-        let nt_data_chirho = File::open(path_chirho.join("nt.czz")).ok();
+    /// Open an existing zVerse module with specified compression type.
+    pub fn open_with_comp_type_chirho<P: AsRef<Path>>(
+        path_chirho: P,
+        compressor_chirho: Box<dyn CompressorChirho>,
+        comp_type_chirho: CompressionTypeChirho,
+    ) -> ResultChirho<Self> {
+        let path_chirho = path_chirho.as_ref().to_path_buf();
+        let ext_prefix_chirho = Self::extension_prefix_chirho(comp_type_chirho);
+
+        // Try the specified extension first, then fall back to trying all extensions
+        let extensions_chirho = [
+            ext_prefix_chirho,
+            "c", // zlib
+            "b", // bzip2
+            "x", // xz
+        ];
+
+        let mut ot_verse_idx_chirho = None;
+        let mut nt_verse_idx_chirho = None;
+        let mut ot_block_idx_chirho = None;
+        let mut nt_block_idx_chirho = None;
+        let mut ot_data_chirho = None;
+        let mut nt_data_chirho = None;
+
+        for ext_chirho in &extensions_chirho {
+            if ot_verse_idx_chirho.is_none() {
+                ot_verse_idx_chirho = File::open(path_chirho.join(format!("ot.{}zv", ext_chirho))).ok();
+            }
+            if nt_verse_idx_chirho.is_none() {
+                nt_verse_idx_chirho = File::open(path_chirho.join(format!("nt.{}zv", ext_chirho))).ok();
+            }
+            if ot_block_idx_chirho.is_none() {
+                ot_block_idx_chirho = File::open(path_chirho.join(format!("ot.{}zs", ext_chirho))).ok();
+            }
+            if nt_block_idx_chirho.is_none() {
+                nt_block_idx_chirho = File::open(path_chirho.join(format!("nt.{}zs", ext_chirho))).ok();
+            }
+            if ot_data_chirho.is_none() {
+                ot_data_chirho = File::open(path_chirho.join(format!("ot.{}zz", ext_chirho))).ok();
+            }
+            if nt_data_chirho.is_none() {
+                nt_data_chirho = File::open(path_chirho.join(format!("nt.{}zz", ext_chirho))).ok();
+            }
+
+            // Break early if we found all files
+            if (ot_verse_idx_chirho.is_some() || nt_verse_idx_chirho.is_some())
+                && (ot_block_idx_chirho.is_some() || nt_block_idx_chirho.is_some())
+                && (ot_data_chirho.is_some() || nt_data_chirho.is_some())
+            {
+                break;
+            }
+        }
 
         if ot_verse_idx_chirho.is_none() && nt_verse_idx_chirho.is_none() {
             return Err(ErrorChirho::InvalidModulePathChirho { path_chirho });
         }
+
+        // Note: File extensions (.bzv/.czv/.xzv) don't reliably indicate compression type.
+        // The actual compression is determined by CompressType in the module config.
+        // We just use the provided compressor based on the config.
 
         Ok(Self {
             path_chirho,

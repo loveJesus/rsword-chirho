@@ -4,8 +4,6 @@
 
 //! Base module trait and common functionality.
 
-use std::path::Path;
-
 use crate::config_chirho::ModuleConfigChirho;
 use crate::error_chirho::ResultChirho;
 use crate::keys_chirho::SwKeyChirho;
@@ -90,7 +88,8 @@ pub trait SwModuleChirho {
 pub struct ModuleBaseChirho {
     /// Module configuration.
     config_chirho: ModuleConfigChirho,
-    /// Current key text.
+    /// Current key text (reserved for future use).
+    #[allow(dead_code)]
     key_text_chirho: String,
     /// Error flag.
     error_chirho: bool,

@@ -35,6 +35,16 @@ pub use modules_chirho::sw_module_chirho::SwModuleChirho;
 pub use modules_chirho::texts_chirho::RawTextChirho;
 pub use manager_chirho::sw_mgr_chirho::SwMgrChirho;
 pub use versification_chirho::VersificationChirho;
+pub use search_chirho::{
+    SearchEngineChirho, SearchOptionsChirho, SearchTypeChirho,
+    TantivySearchChirho, RegexSearchChirho,
+};
+pub use filters_chirho::{
+    FilterChirho, FilterOptionsChirho, FilterChainChirho,
+    OsisToHtmlFilterChirho, OsisToPlainFilterChirho,
+    ThmlToHtmlFilterChirho, ThmlToPlainFilterChirho,
+    GbfToHtmlFilterChirho, GbfToPlainFilterChirho,
+};
 
 /// Library version
 pub const VERSION_CHIRHO: &str = env!("CARGO_PKG_VERSION");

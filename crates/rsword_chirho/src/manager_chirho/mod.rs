@@ -6,6 +6,11 @@
 
 pub mod sw_mgr_chirho;
 pub mod install_mgr_chirho;
+pub mod module_factory_chirho;
 
 pub use sw_mgr_chirho::SwMgrChirho;
 pub use install_mgr_chirho::InstallMgrChirho;
+pub use module_factory_chirho::{
+    LoadedModuleChirho, ModuleDriverTypeChirho, OutputFormatChirho,
+    load_module_chirho,
+};

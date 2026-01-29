@@ -11,6 +11,7 @@ use walkdir::WalkDir;
 
 use crate::config_chirho::ModuleConfigChirho;
 use crate::error_chirho::{ErrorChirho, ResultChirho};
+use super::module_factory_chirho::{LoadedModuleChirho, load_module_chirho};
 
 /// SWORD module manager.
 ///
@@ -185,6 +186,37 @@ impl SwMgrChirho {
         }
 
         None
+    }
+
+    /// Get the base path for a module.
+    pub fn get_module_base_path_chirho(&self, name_chirho: &str) -> Option<PathBuf> {
+        let config_chirho = self.modules_chirho.get(name_chirho)?;
+        let data_path_chirho = config_chirho.data_path_chirho()?;
+
+        // Find which base path contains this module
+        for base_path_chirho in &self.mod_paths_chirho {
+            let full_path_chirho = base_path_chirho.join(data_path_chirho);
+            if full_path_chirho.exists() {
+                return Some(base_path_chirho.clone());
+            }
+        }
+
+        None
+    }
+
+    /// Load a module for reading.
+    pub fn load_module_chirho(&self, name_chirho: &str) -> ResultChirho<LoadedModuleChirho> {
+        let config_chirho = self.modules_chirho.get(name_chirho)
+            .ok_or_else(|| ErrorChirho::ModuleNotFoundChirho {
+                module_name_chirho: name_chirho.to_string(),
+            })?;
+
+        let base_path_chirho = self.get_module_base_path_chirho(name_chirho)
+            .ok_or_else(|| ErrorChirho::ModuleNotFoundChirho {
+                module_name_chirho: name_chirho.to_string(),
+            })?;
+
+        load_module_chirho(&base_path_chirho, config_chirho)
     }
 }
 

@@ -1,0 +1,32 @@
+# For God so loved the world that he gave his only begotten Son,
+# that whoever believes in him should not perish but have eternal life.
+# John 3:16
+
+[package]
+name = "rsword_chirho"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "Core SWORD module library in pure Rust"
+keywords = ["bible", "sword", "scripture", "module"]
+categories = ["text-processing"]
+
+[dependencies]
+thiserror.workspace = true
+anyhow.workspace = true
+flate2.workspace = true
+bzip2.workspace = true
+xz2.workspace = true
+tantivy.workspace = true
+regex.workspace = true
+quick-xml.workspace = true
+encoding_rs.workspace = true
+bitflags.workspace = true
+serde.workspace = true
+log.workspace = true
+walkdir.workspace = true
+memmap2.workspace = true
+
+[dev-dependencies]
+tempfile = "3.8"

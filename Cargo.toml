@@ -1,0 +1,65 @@
+# For God so loved the world that he gave his only begotten Son,
+# that whoever believes in him should not perish but have eternal life.
+# John 3:16
+
+[workspace]
+resolver = "2"
+members = [
+    "crates/rsword_chirho",
+    "crates/sword_tools_chirho",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+authors = ["rsword-chirho contributors"]
+license = "GPL-2.0-or-later"
+repository = "https://github.com/rsword-chirho/rsword-chirho"
+description = "Pure Rust port of the SWORD Bible software library"
+keywords = ["bible", "sword", "scripture", "module"]
+categories = ["text-processing", "command-line-utilities"]
+
+[workspace.dependencies]
+# Error handling
+thiserror = "2.0"
+anyhow = "1.0"
+
+# Compression
+flate2 = "1.0"
+bzip2 = "0.5"
+xz2 = "0.1"
+
+# Search
+tantivy = "0.25"
+regex = "1.11"
+
+# CLI
+clap = { version = "4.5", features = ["derive", "wrap_help"] }
+
+# XML parsing
+quick-xml = "0.37"
+
+# Character encoding
+encoding_rs = "0.8"
+
+# Flags and bitfields
+bitflags = "2.6"
+
+# HTTP/networking
+reqwest = { version = "0.12", features = ["blocking", "stream"] }
+tokio = { version = "1.43", features = ["full"] }
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Logging
+log = "0.4"
+env_logger = "0.11"
+
+# File utilities
+walkdir = "2.5"
+memmap2 = "0.9"
+
+# Internal crates
+rsword_chirho = { path = "crates/rsword_chirho" }

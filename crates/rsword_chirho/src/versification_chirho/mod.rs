@@ -1,0 +1,330 @@
+// For God so loved the world that he gave his only begotten Son,
+// that whoever believes in him should not perish but have eternal life.
+// John 3:16
+
+//! Versification systems for Bible navigation.
+//!
+//! Different Bible translations use different verse numbering systems.
+//! This module provides support for various versification schemes including
+//! KJV, Catholic, LXX, and others.
+
+pub mod canons_chirho;
+pub mod manager_chirho;
+
+use std::collections::HashMap;
+use std::sync::LazyLock;
+
+pub use manager_chirho::VersificationManagerChirho;
+
+/// Book information.
+#[derive(Debug, Clone)]
+pub struct BookInfoChirho {
+    /// Full book name.
+    pub name_chirho: String,
+    /// OSIS abbreviation.
+    pub osis_chirho: String,
+    /// Short abbreviation.
+    pub abbrev_chirho: String,
+    /// Number of chapters.
+    pub chapter_count_chirho: u8,
+    /// Maximum verses per chapter.
+    pub verse_max_chirho: Vec<u8>,
+}
+
+impl BookInfoChirho {
+    /// Create a new book info.
+    pub fn new_chirho(
+        name_chirho: &str,
+        osis_chirho: &str,
+        abbrev_chirho: &str,
+        verse_max_chirho: Vec<u8>,
+    ) -> Self {
+        Self {
+            name_chirho: name_chirho.to_string(),
+            osis_chirho: osis_chirho.to_string(),
+            abbrev_chirho: abbrev_chirho.to_string(),
+            chapter_count_chirho: verse_max_chirho.len() as u8,
+            verse_max_chirho,
+        }
+    }
+
+    /// Get the maximum verse for a chapter (1-indexed).
+    pub fn max_verse_chirho(&self, chapter_chirho: u8) -> Option<u8> {
+        if chapter_chirho == 0 || chapter_chirho > self.chapter_count_chirho {
+            None
+        } else {
+            Some(self.verse_max_chirho[(chapter_chirho - 1) as usize])
+        }
+    }
+}
+
+/// Testament enumeration.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum TestamentChirho {
+    /// Old Testament.
+    OldChirho = 1,
+    /// New Testament.
+    NewChirho = 2,
+}
+
+impl TestamentChirho {
+    /// Get from numeric value.
+    pub fn from_u8_chirho(value_chirho: u8) -> Option<Self> {
+        match value_chirho {
+            1 => Some(Self::OldChirho),
+            2 => Some(Self::NewChirho),
+            _ => None,
+        }
+    }
+}
+
+/// A versification system.
+#[derive(Debug, Clone)]
+pub struct VersificationChirho {
+    /// Name of this versification system.
+    pub name_chirho: String,
+    /// Old Testament books.
+    pub ot_books_chirho: Vec<BookInfoChirho>,
+    /// New Testament books.
+    pub nt_books_chirho: Vec<BookInfoChirho>,
+    /// Precomputed offset table for OT.
+    ot_offsets_chirho: Vec<u32>,
+    /// Precomputed offset table for NT.
+    nt_offsets_chirho: Vec<u32>,
+    /// Total verses in OT.
+    ot_total_chirho: u32,
+    /// Total verses in NT.
+    nt_total_chirho: u32,
+    /// Book name to index mapping.
+    book_lookup_chirho: HashMap<String, (TestamentChirho, usize)>,
+}
+
+impl VersificationChirho {
+    /// Create a new versification system.
+    pub fn new_chirho(
+        name_chirho: &str,
+        ot_books_chirho: Vec<BookInfoChirho>,
+        nt_books_chirho: Vec<BookInfoChirho>,
+    ) -> Self {
+        let mut v11n_chirho = Self {
+            name_chirho: name_chirho.to_string(),
+            ot_books_chirho,
+            nt_books_chirho,
+            ot_offsets_chirho: Vec::new(),
+            nt_offsets_chirho: Vec::new(),
+            ot_total_chirho: 0,
+            nt_total_chirho: 0,
+            book_lookup_chirho: HashMap::new(),
+        };
+        v11n_chirho.build_offsets_chirho();
+        v11n_chirho.build_lookup_chirho();
+        v11n_chirho
+    }
+
+    fn build_offsets_chirho(&mut self) {
+        // Build OT offsets
+        let mut offset_chirho = 0u32;
+        for book_chirho in &self.ot_books_chirho {
+            self.ot_offsets_chirho.push(offset_chirho);
+            for &max_v_chirho in &book_chirho.verse_max_chirho {
+                offset_chirho += max_v_chirho as u32 + 1; // +1 for chapter intro
+            }
+            offset_chirho += 1; // +1 for book intro
+        }
+        self.ot_total_chirho = offset_chirho;
+
+        // Build NT offsets
+        offset_chirho = 0;
+        for book_chirho in &self.nt_books_chirho {
+            self.nt_offsets_chirho.push(offset_chirho);
+            for &max_v_chirho in &book_chirho.verse_max_chirho {
+                offset_chirho += max_v_chirho as u32 + 1; // +1 for chapter intro
+            }
+            offset_chirho += 1; // +1 for book intro
+        }
+        self.nt_total_chirho = offset_chirho;
+    }
+
+    fn build_lookup_chirho(&mut self) {
+        // Collect book entries to avoid borrow issues
+        let mut entries_chirho: Vec<(String, (TestamentChirho, usize))> = Vec::new();
+
+        // Add OT books
+        for (idx_chirho, book_chirho) in self.ot_books_chirho.iter().enumerate() {
+            Self::collect_book_entries_chirho(
+                &mut entries_chirho,
+                TestamentChirho::OldChirho,
+                idx_chirho,
+                book_chirho,
+            );
+        }
+
+        // Add NT books
+        for (idx_chirho, book_chirho) in self.nt_books_chirho.iter().enumerate() {
+            Self::collect_book_entries_chirho(
+                &mut entries_chirho,
+                TestamentChirho::NewChirho,
+                idx_chirho,
+                book_chirho,
+            );
+        }
+
+        // Insert all entries
+        for (key_chirho, value_chirho) in entries_chirho {
+            self.book_lookup_chirho.insert(key_chirho, value_chirho);
+        }
+    }
+
+    fn collect_book_entries_chirho(
+        entries_chirho: &mut Vec<(String, (TestamentChirho, usize))>,
+        testament_chirho: TestamentChirho,
+        idx_chirho: usize,
+        book_chirho: &BookInfoChirho,
+    ) {
+        let name_lower_chirho = book_chirho.name_chirho.to_lowercase();
+        let osis_lower_chirho = book_chirho.osis_chirho.to_lowercase();
+        let abbrev_lower_chirho = book_chirho.abbrev_chirho.to_lowercase();
+
+        entries_chirho.push((name_lower_chirho.clone(), (testament_chirho, idx_chirho)));
+        entries_chirho.push((osis_lower_chirho.clone(), (testament_chirho, idx_chirho)));
+        entries_chirho.push((abbrev_lower_chirho.clone(), (testament_chirho, idx_chirho)));
+
+        // Add numeric aliases for Roman numeral books
+        // e.g., "I John" -> "1 John", "1john", "1jn"
+        let roman_to_arabic_chirho = [
+            ("i ", "1 "),
+            ("ii ", "2 "),
+            ("iii ", "3 "),
+            ("iv ", "4 "),
+        ];
+
+        for (roman_chirho, arabic_chirho) in &roman_to_arabic_chirho {
+            if name_lower_chirho.starts_with(roman_chirho) {
+                let alias_chirho = format!("{}{}", arabic_chirho, &name_lower_chirho[roman_chirho.len()..]);
+                entries_chirho.push((alias_chirho.clone(), (testament_chirho, idx_chirho)));
+                // Also add without space: "1john"
+                let no_space_chirho = alias_chirho.replace(' ', "");
+                entries_chirho.push((no_space_chirho, (testament_chirho, idx_chirho)));
+            }
+            if osis_lower_chirho.starts_with(roman_chirho.trim()) {
+                let alias_chirho = format!("{}{}", arabic_chirho.trim(), &osis_lower_chirho[roman_chirho.trim().len()..]);
+                entries_chirho.push((alias_chirho, (testament_chirho, idx_chirho)));
+            }
+        }
+    }
+
+    /// Look up a book by name or abbreviation.
+    pub fn lookup_book_chirho(&self, name_chirho: &str) -> Option<(TestamentChirho, usize)> {
+        let normalized_chirho = name_chirho.to_lowercase();
+        self.book_lookup_chirho.get(&normalized_chirho).copied()
+    }
+
+    /// Get a book by testament and index.
+    pub fn get_book_chirho(&self, testament_chirho: TestamentChirho, index_chirho: usize) -> Option<&BookInfoChirho> {
+        match testament_chirho {
+            TestamentChirho::OldChirho => self.ot_books_chirho.get(index_chirho),
+            TestamentChirho::NewChirho => self.nt_books_chirho.get(index_chirho),
+        }
+    }
+
+    /// Get the number of books in a testament.
+    pub fn book_count_chirho(&self, testament_chirho: TestamentChirho) -> usize {
+        match testament_chirho {
+            TestamentChirho::OldChirho => self.ot_books_chirho.len(),
+            TestamentChirho::NewChirho => self.nt_books_chirho.len(),
+        }
+    }
+
+    /// Get the total number of entries in a testament (including intros).
+    pub fn testament_size_chirho(&self, testament_chirho: TestamentChirho) -> u32 {
+        match testament_chirho {
+            TestamentChirho::OldChirho => self.ot_total_chirho,
+            TestamentChirho::NewChirho => self.nt_total_chirho,
+        }
+    }
+
+    /// Calculate the index offset for a verse.
+    pub fn calculate_index_chirho(
+        &self,
+        testament_chirho: TestamentChirho,
+        book_chirho: usize,
+        chapter_chirho: u8,
+        verse_chirho: u8,
+    ) -> Option<u32> {
+        let book_info_chirho = self.get_book_chirho(testament_chirho, book_chirho)?;
+        let offsets_chirho = match testament_chirho {
+            TestamentChirho::OldChirho => &self.ot_offsets_chirho,
+            TestamentChirho::NewChirho => &self.nt_offsets_chirho,
+        };
+
+        if book_chirho >= offsets_chirho.len() {
+            return None;
+        }
+
+        let mut index_chirho = offsets_chirho[book_chirho];
+
+        // Add book intro
+        index_chirho += 1;
+
+        // Add chapters
+        if chapter_chirho > 0 {
+            for ch_chirho in 0..(chapter_chirho as usize - 1).min(book_info_chirho.verse_max_chirho.len()) {
+                index_chirho += book_info_chirho.verse_max_chirho[ch_chirho] as u32 + 1;
+            }
+            // Add chapter intro
+            index_chirho += 1;
+            // Add verse
+            index_chirho += verse_chirho as u32;
+        }
+
+        Some(index_chirho)
+    }
+}
+
+/// Get the KJV versification system.
+pub fn kjv_chirho() -> &'static VersificationChirho {
+    static KJV_CHIRHO: LazyLock<VersificationChirho> = LazyLock::new(|| {
+        canons_chirho::kjv_chirho::create_kjv_chirho()
+    });
+    &KJV_CHIRHO
+}
+
+#[cfg(test)]
+mod tests_chirho {
+    use super::*;
+
+    #[test]
+    fn test_kjv_versification_chirho() {
+        let kjv_chirho = kjv_chirho();
+
+        assert_eq!(kjv_chirho.name_chirho, "KJV");
+        assert_eq!(kjv_chirho.ot_books_chirho.len(), 39);
+        assert_eq!(kjv_chirho.nt_books_chirho.len(), 27);
+    }
+
+    #[test]
+    fn test_book_lookup_chirho() {
+        let kjv_chirho = kjv_chirho();
+
+        let genesis_chirho = kjv_chirho.lookup_book_chirho("Genesis");
+        assert!(genesis_chirho.is_some());
+        let (testament_chirho, idx_chirho) = genesis_chirho.unwrap();
+        assert_eq!(testament_chirho, TestamentChirho::OldChirho);
+        assert_eq!(idx_chirho, 0);
+
+        let john_chirho = kjv_chirho.lookup_book_chirho("John");
+        assert!(john_chirho.is_some());
+        let (testament_chirho, _) = john_chirho.unwrap();
+        assert_eq!(testament_chirho, TestamentChirho::NewChirho);
+    }
+
+    #[test]
+    fn test_max_verse_chirho() {
+        let kjv_chirho = kjv_chirho();
+
+        let genesis_chirho = kjv_chirho.get_book_chirho(TestamentChirho::OldChirho, 0).unwrap();
+        assert_eq!(genesis_chirho.name_chirho, "Genesis");
+        assert_eq!(genesis_chirho.chapter_count_chirho, 50);
+        assert_eq!(genesis_chirho.max_verse_chirho(1), Some(31)); // Genesis 1 has 31 verses
+    }
+}

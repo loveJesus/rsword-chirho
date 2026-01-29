@@ -1,0 +1,70 @@
+# For God so loved the world that he gave his only begotten Son,
+# that whoever believes in him should not perish but have eternal life.
+# John 3:16
+
+[package]
+name = "sword_tools_chirho"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "CLI tools for SWORD Bible modules"
+keywords = ["bible", "sword", "cli", "diatheke"]
+categories = ["command-line-utilities"]
+
+[[bin]]
+name = "diatheke_chirho"
+path = "src/bin/diatheke_chirho.rs"
+
+[[bin]]
+name = "installmgr_chirho"
+path = "src/bin/installmgr_chirho.rs"
+
+[[bin]]
+name = "osis2mod_chirho"
+path = "src/bin/osis2mod_chirho.rs"
+
+[[bin]]
+name = "tei2mod_chirho"
+path = "src/bin/tei2mod_chirho.rs"
+
+[[bin]]
+name = "imp2vs_chirho"
+path = "src/bin/imp2vs_chirho.rs"
+
+[[bin]]
+name = "imp2ld_chirho"
+path = "src/bin/imp2ld_chirho.rs"
+
+[[bin]]
+name = "imp2gbs_chirho"
+path = "src/bin/imp2gbs_chirho.rs"
+
+[[bin]]
+name = "mod2imp_chirho"
+path = "src/bin/mod2imp_chirho.rs"
+
+[[bin]]
+name = "mod2osis_chirho"
+path = "src/bin/mod2osis_chirho.rs"
+
+[[bin]]
+name = "mod2zmod_chirho"
+path = "src/bin/mod2zmod_chirho.rs"
+
+[[bin]]
+name = "mkfastmod_chirho"
+path = "src/bin/mkfastmod_chirho.rs"
+
+[[bin]]
+name = "vpl2mod_chirho"
+path = "src/bin/vpl2mod_chirho.rs"
+
+[dependencies]
+rsword_chirho.workspace = true
+clap.workspace = true
+anyhow.workspace = true
+tokio.workspace = true
+reqwest.workspace = true
+log.workspace = true
+env_logger.workspace = true

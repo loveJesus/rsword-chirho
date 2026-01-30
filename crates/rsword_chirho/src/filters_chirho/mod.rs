@@ -10,12 +10,64 @@
 mod osis_chirho;
 mod thml_chirho;
 mod gbf_chirho;
+mod tei_filter_chirho;
+mod cipher_filter_chirho;
+mod global_options_chirho;
+mod strongs_filter_chirho;
+mod footnotes_filter_chirho;
+mod redletter_filter_chirho;
 
 pub use osis_chirho::{OsisToHtmlFilterChirho, OsisToPlainFilterChirho};
 pub use thml_chirho::{ThmlToHtmlFilterChirho, ThmlToPlainFilterChirho};
 pub use gbf_chirho::{GbfToHtmlFilterChirho, GbfToPlainFilterChirho};
+pub use tei_filter_chirho::{TeiToHtmlFilterChirho, TeiToPlainFilterChirho};
+pub use cipher_filter_chirho::{CipherFilterChirho, CipherBytesFilterChirho};
+pub use global_options_chirho::{GlobalOptionsChirho, GlobalOptionManagerChirho};
+pub use strongs_filter_chirho::{StrongsStripFilterChirho, StrongsFormatFilterChirho, StrongsFormatChirho};
+pub use footnotes_filter_chirho::{FootnotesStripFilterChirho, FootnotesFormatFilterChirho, FootnoteFormatChirho};
+pub use redletter_filter_chirho::{RedLetterStripFilterChirho, RedLetterFormatFilterChirho};
 
 use crate::error_chirho::ResultChirho;
+
+/// Escape HTML special characters to prevent XSS.
+///
+/// This function escapes the five HTML special characters that could be used
+/// for injection attacks: `<`, `>`, `&`, `"`, and `'`.
+#[inline]
+pub fn escape_html_chirho(text_chirho: &str) -> String {
+    let mut result_chirho = String::with_capacity(text_chirho.len());
+    for ch_chirho in text_chirho.chars() {
+        match ch_chirho {
+            '<' => result_chirho.push_str("&lt;"),
+            '>' => result_chirho.push_str("&gt;"),
+            '&' => result_chirho.push_str("&amp;"),
+            '"' => result_chirho.push_str("&quot;"),
+            '\'' => result_chirho.push_str("&#39;"),
+            _ => result_chirho.push(ch_chirho),
+        }
+    }
+    result_chirho
+}
+
+/// Escape HTML for attribute values (also escapes backticks and newlines).
+#[inline]
+pub fn escape_html_attr_chirho(text_chirho: &str) -> String {
+    let mut result_chirho = String::with_capacity(text_chirho.len());
+    for ch_chirho in text_chirho.chars() {
+        match ch_chirho {
+            '<' => result_chirho.push_str("&lt;"),
+            '>' => result_chirho.push_str("&gt;"),
+            '&' => result_chirho.push_str("&amp;"),
+            '"' => result_chirho.push_str("&quot;"),
+            '\'' => result_chirho.push_str("&#39;"),
+            '`' => result_chirho.push_str("&#96;"),
+            '\n' => result_chirho.push_str("&#10;"),
+            '\r' => result_chirho.push_str("&#13;"),
+            _ => result_chirho.push(ch_chirho),
+        }
+    }
+    result_chirho
+}
 
 /// Filter trait for text transformation.
 pub trait FilterChirho: Send + Sync {

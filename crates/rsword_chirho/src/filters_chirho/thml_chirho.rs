@@ -12,7 +12,7 @@ use regex::Regex;
 use std::sync::LazyLock;
 
 use crate::error_chirho::ResultChirho;
-use super::{FilterChirho, FilterOptionsChirho};
+use super::{escape_html_chirho, escape_html_attr_chirho, FilterChirho, FilterOptionsChirho};
 
 /// Regex for ThML synchronization tags (Strong's numbers).
 static THML_SYNC_REGEX_CHIRHO: LazyLock<Regex> = LazyLock::new(|| {
@@ -82,9 +82,11 @@ impl FilterChirho for ThmlToHtmlFilterChirho {
         if self.options_chirho.strongs_chirho {
             result_chirho = THML_SYNC_REGEX_CHIRHO
                 .replace_all(&result_chirho, |caps_chirho: &regex::Captures| {
+                    let strongs_chirho = &caps_chirho[1];
                     format!(
-                        r#"<sup class="strongs"><a href="strongs://{0}">{0}</a></sup>"#,
-                        &caps_chirho[1]
+                        r#"<sup class="strongs"><a href="strongs://{}">{}</a></sup>"#,
+                        escape_html_attr_chirho(strongs_chirho),
+                        escape_html_chirho(strongs_chirho)
                     )
                 })
                 .to_string();
@@ -96,15 +98,19 @@ impl FilterChirho for ThmlToHtmlFilterChirho {
         if self.options_chirho.scripref_chirho {
             result_chirho = THML_SCRIPREF_REGEX_CHIRHO
                 .replace_all(&result_chirho, |caps_chirho: &regex::Captures| {
+                    let ref_chirho = &caps_chirho[1];
                     format!(
-                        r#"<a class="scripref" href="bible://{0}">{0}</a>"#,
-                        &caps_chirho[1]
+                        r#"<a class="scripref" href="bible://{}">{}</a>"#,
+                        escape_html_attr_chirho(ref_chirho),
+                        escape_html_chirho(ref_chirho)
                     )
                 })
                 .to_string();
         } else {
             result_chirho = THML_SCRIPREF_REGEX_CHIRHO
-                .replace_all(&result_chirho, "$1")
+                .replace_all(&result_chirho, |caps_chirho: &regex::Captures| {
+                    escape_html_chirho(&caps_chirho[1])
+                })
                 .to_string();
         }
 
@@ -112,7 +118,7 @@ impl FilterChirho for ThmlToHtmlFilterChirho {
         if self.options_chirho.footnotes_chirho {
             result_chirho = THML_NOTE_REGEX_CHIRHO
                 .replace_all(&result_chirho, |caps_chirho: &regex::Captures| {
-                    format!(r#"<span class="footnote">[{}]</span>"#, &caps_chirho[1])
+                    format!(r#"<span class="footnote">[{}]</span>"#, escape_html_chirho(&caps_chirho[1]))
                 })
                 .to_string();
         } else {
@@ -121,26 +127,33 @@ impl FilterChirho for ThmlToHtmlFilterChirho {
 
         // Process added text (italics)
         result_chirho = THML_ADDED_REGEX_CHIRHO
-            .replace_all(&result_chirho, r#"<em class="added">$1</em>"#)
+            .replace_all(&result_chirho, |caps_chirho: &regex::Captures| {
+                format!(r#"<em class="added">{}</em>"#, escape_html_chirho(&caps_chirho[1]))
+            })
             .to_string();
 
         // Process divine name (small caps -> span)
         result_chirho = THML_DIVINE_REGEX_CHIRHO
-            .replace_all(&result_chirho, r#"<span class="divine-name">$1</span>"#)
+            .replace_all(&result_chirho, |caps_chirho: &regex::Captures| {
+                format!(r#"<span class="divine-name">{}</span>"#, escape_html_chirho(&caps_chirho[1]))
+            })
             .to_string();
 
         // Process terms and definitions
         result_chirho = THML_TERM_REGEX_CHIRHO
-            .replace_all(&result_chirho, r#"<dfn class="term">$1</dfn>"#)
+            .replace_all(&result_chirho, |caps_chirho: &regex::Captures| {
+                format!(r#"<dfn class="term">{}</dfn>"#, escape_html_chirho(&caps_chirho[1]))
+            })
             .to_string();
 
         result_chirho = THML_DEF_REGEX_CHIRHO
-            .replace_all(&result_chirho, r#"<span class="definition">$1</span>"#)
+            .replace_all(&result_chirho, |caps_chirho: &regex::Captures| {
+                format!(r#"<span class="definition">{}</span>"#, escape_html_chirho(&caps_chirho[1]))
+            })
             .to_string();
 
         // Convert basic ThML elements to HTML equivalents
         result_chirho = result_chirho
-            .replace("<br/>", "<br/>")
             .replace("<br />", "<br/>")
             .replace("<pb/>", "<hr class=\"page-break\"/>")
             .replace("<pb />", "<hr class=\"page-break\"/>");

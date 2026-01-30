@@ -260,6 +260,202 @@ impl InstallMgrChirho {
 
         Ok(modules_chirho)
     }
+
+    /// Get module info including version from a source.
+    pub fn get_remote_module_info_chirho(
+        &self,
+        source_name_chirho: &str,
+        module_name_chirho: &str,
+    ) -> ResultChirho<ModuleInfoChirho> {
+        let cache_dir_chirho = self.config_dir_chirho.join("remote_mods.d").join(source_name_chirho);
+        let mods_d_chirho = cache_dir_chirho.join("mods.d");
+        let search_dir_chirho = if mods_d_chirho.exists() { mods_d_chirho } else { cache_dir_chirho };
+
+        let conf_path_chirho = search_dir_chirho.join(format!("{}.conf", module_name_chirho.to_lowercase()));
+
+        if !conf_path_chirho.exists() {
+            return Err(ErrorChirho::module_not_found_chirho(module_name_chirho));
+        }
+
+        let config_chirho = crate::config_chirho::ModuleConfigChirho::from_file_chirho(&conf_path_chirho)?;
+
+        Ok(ModuleInfoChirho {
+            name_chirho: config_chirho.name_chirho.clone(),
+            version_chirho: config_chirho.get_chirho("Version").unwrap_or("1.0").to_string(),
+            description_chirho: config_chirho.get_chirho("Description").unwrap_or("").to_string(),
+            language_chirho: config_chirho.get_chirho("Lang").unwrap_or("en").to_string(),
+            module_type_chirho: config_chirho.get_chirho("ModDrv").unwrap_or("Unknown").to_string(),
+        })
+    }
+
+    /// Get installed module info.
+    pub fn get_installed_module_info_chirho(&self, module_name_chirho: &str) -> ResultChirho<ModuleInfoChirho> {
+        let conf_path_chirho = self.install_path_chirho
+            .join("mods.d")
+            .join(format!("{}.conf", module_name_chirho.to_lowercase()));
+
+        if !conf_path_chirho.exists() {
+            return Err(ErrorChirho::module_not_found_chirho(module_name_chirho));
+        }
+
+        let config_chirho = crate::config_chirho::ModuleConfigChirho::from_file_chirho(&conf_path_chirho)?;
+
+        Ok(ModuleInfoChirho {
+            name_chirho: config_chirho.name_chirho.clone(),
+            version_chirho: config_chirho.get_chirho("Version").unwrap_or("1.0").to_string(),
+            description_chirho: config_chirho.get_chirho("Description").unwrap_or("").to_string(),
+            language_chirho: config_chirho.get_chirho("Lang").unwrap_or("en").to_string(),
+            module_type_chirho: config_chirho.get_chirho("ModDrv").unwrap_or("Unknown").to_string(),
+        })
+    }
+
+    /// Compare versions and find modules needing upgrade.
+    pub fn check_updates_chirho(&self, source_name_chirho: &str) -> ResultChirho<Vec<ModuleUpdateChirho>> {
+        let installed_chirho = self.list_installed_chirho()?;
+        let remote_chirho = self.list_remote_modules_chirho(source_name_chirho)?;
+
+        let mut updates_chirho = Vec::new();
+
+        for mod_name_chirho in &installed_chirho {
+            if remote_chirho.iter().any(|r_chirho| r_chirho.eq_ignore_ascii_case(mod_name_chirho)) {
+                let local_info_chirho = self.get_installed_module_info_chirho(mod_name_chirho)?;
+                let remote_info_chirho = self.get_remote_module_info_chirho(source_name_chirho, mod_name_chirho)?;
+
+                if compare_versions_chirho(&local_info_chirho.version_chirho, &remote_info_chirho.version_chirho) < 0 {
+                    updates_chirho.push(ModuleUpdateChirho {
+                        name_chirho: mod_name_chirho.clone(),
+                        current_version_chirho: local_info_chirho.version_chirho,
+                        available_version_chirho: remote_info_chirho.version_chirho,
+                    });
+                }
+            }
+        }
+
+        Ok(updates_chirho)
+    }
+
+    /// Upgrade all modules that have updates available.
+    pub fn upgrade_all_chirho(&self, source_name_chirho: &str) -> ResultChirho<Vec<String>> {
+        let updates_chirho = self.check_updates_chirho(source_name_chirho)?;
+        let mut upgraded_chirho = Vec::new();
+
+        for update_chirho in &updates_chirho {
+            eprintln!("Upgrading {} from {} to {}...",
+                update_chirho.name_chirho,
+                update_chirho.current_version_chirho,
+                update_chirho.available_version_chirho
+            );
+            self.install_module_chirho(source_name_chirho, &update_chirho.name_chirho)?;
+            upgraded_chirho.push(update_chirho.name_chirho.clone());
+        }
+
+        Ok(upgraded_chirho)
+    }
+
+    /// Search for modules by name/description across all cached sources.
+    pub fn search_modules_chirho(&self, query_chirho: &str) -> ResultChirho<Vec<SearchResultChirho>> {
+        let query_lower_chirho = query_chirho.to_lowercase();
+        let mut results_chirho = Vec::new();
+
+        for source_chirho in self.get_sources_chirho() {
+            let source_name_chirho = &source_chirho.caption_chirho;
+            let modules_chirho = self.list_remote_modules_chirho(source_name_chirho).unwrap_or_default();
+
+            for mod_name_chirho in modules_chirho {
+                if mod_name_chirho.to_lowercase().contains(&query_lower_chirho) {
+                    results_chirho.push(SearchResultChirho {
+                        source_name_chirho: source_name_chirho.clone(),
+                        module_name_chirho: mod_name_chirho,
+                    });
+                } else if let Ok(info_chirho) = self.get_remote_module_info_chirho(source_name_chirho, &mod_name_chirho) {
+                    if info_chirho.description_chirho.to_lowercase().contains(&query_lower_chirho) {
+                        results_chirho.push(SearchResultChirho {
+                            source_name_chirho: source_name_chirho.clone(),
+                            module_name_chirho: mod_name_chirho,
+                        });
+                    }
+                }
+            }
+        }
+
+        Ok(results_chirho)
+    }
+
+    /// Refresh all sources.
+    pub fn refresh_all_sources_chirho(&mut self) -> ResultChirho<()> {
+        let sources_chirho: Vec<String> = self.get_sources_chirho()
+            .iter()
+            .map(|s_chirho| s_chirho.caption_chirho.clone())
+            .collect();
+
+        for source_name_chirho in sources_chirho {
+            eprintln!("Refreshing {}...", source_name_chirho);
+            let _ = self.refresh_source_chirho(&source_name_chirho);
+        }
+
+        Ok(())
+    }
+}
+
+/// Module information.
+#[derive(Debug, Clone)]
+pub struct ModuleInfoChirho {
+    /// Module name.
+    pub name_chirho: String,
+    /// Module version.
+    pub version_chirho: String,
+    /// Module description.
+    pub description_chirho: String,
+    /// Module language.
+    pub language_chirho: String,
+    /// Module driver type.
+    pub module_type_chirho: String,
+}
+
+/// Module update information.
+#[derive(Debug, Clone)]
+pub struct ModuleUpdateChirho {
+    /// Module name.
+    pub name_chirho: String,
+    /// Currently installed version.
+    pub current_version_chirho: String,
+    /// Available version.
+    pub available_version_chirho: String,
+}
+
+/// Search result.
+#[derive(Debug, Clone)]
+pub struct SearchResultChirho {
+    /// Source name where module was found.
+    pub source_name_chirho: String,
+    /// Module name.
+    pub module_name_chirho: String,
+}
+
+/// Compare version strings (e.g., "1.0" vs "1.1").
+/// Returns -1 if v1 < v2, 0 if equal, 1 if v1 > v2.
+fn compare_versions_chirho(v1_chirho: &str, v2_chirho: &str) -> i32 {
+    let parts1_chirho: Vec<u32> = v1_chirho.split('.')
+        .filter_map(|p_chirho| p_chirho.parse().ok())
+        .collect();
+    let parts2_chirho: Vec<u32> = v2_chirho.split('.')
+        .filter_map(|p_chirho| p_chirho.parse().ok())
+        .collect();
+
+    let max_len_chirho = parts1_chirho.len().max(parts2_chirho.len());
+
+    for i_chirho in 0..max_len_chirho {
+        let p1_chirho = parts1_chirho.get(i_chirho).copied().unwrap_or(0);
+        let p2_chirho = parts2_chirho.get(i_chirho).copied().unwrap_or(0);
+
+        if p1_chirho < p2_chirho {
+            return -1;
+        } else if p1_chirho > p2_chirho {
+            return 1;
+        }
+    }
+
+    0
 }
 
 #[cfg(test)]

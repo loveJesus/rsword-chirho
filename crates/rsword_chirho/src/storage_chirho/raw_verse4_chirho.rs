@@ -175,6 +175,39 @@ impl RawVerse4Chirho {
         Ok(())
     }
 
+    /// Link one verse to another (make it point to the same text).
+    pub fn link_verse_chirho(
+        &mut self,
+        testament_chirho: u8,
+        dest_idx_chirho: u32,
+        src_idx_chirho: u32,
+    ) -> ResultChirho<()> {
+        // Read the source entry offset and size
+        let src_byte_offset_chirho = src_idx_chirho as u64 * RawVerse4IndexChirho::SIZE_CHIRHO as u64;
+
+        let idx_file_chirho = match testament_chirho {
+            1 => self.ot_idx_chirho.as_mut(),
+            2 => self.nt_idx_chirho.as_mut(),
+            _ => return Err(ErrorChirho::generic_chirho("Invalid testament")),
+        };
+
+        let idx_file_chirho = idx_file_chirho
+            .ok_or_else(|| ErrorChirho::generic_chirho("Index file not available"))?;
+
+        // Read source entry
+        idx_file_chirho.seek(SeekFrom::Start(src_byte_offset_chirho))?;
+        let src_offset_chirho = idx_file_chirho.read_u32_sword_chirho()?;
+        let src_size_chirho = idx_file_chirho.read_u32_sword_chirho()?;
+
+        // Write to destination entry
+        let dest_byte_offset_chirho = dest_idx_chirho as u64 * RawVerse4IndexChirho::SIZE_CHIRHO as u64;
+        idx_file_chirho.seek(SeekFrom::Start(dest_byte_offset_chirho))?;
+        idx_file_chirho.write_u32_sword_chirho(src_offset_chirho)?;
+        idx_file_chirho.write_u32_sword_chirho(src_size_chirho)?;
+
+        Ok(())
+    }
+
     /// Get the path to the module.
     pub fn path_chirho(&self) -> &Path {
         &self.path_chirho

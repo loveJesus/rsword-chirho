@@ -4,11 +4,19 @@
 
 //! Module import functionality.
 //!
-//! Parsers for OSIS, TEI, IMP, and other input formats.
+//! Parsers for OSIS, TEI, IMP, VPL, and other input formats.
+
+mod vpl_parser_chirho;
+mod osis_parser_chirho;
+mod tei_parser_chirho;
 
 use std::path::Path;
 
 use crate::error_chirho::ResultChirho;
+
+pub use vpl_parser_chirho::{VplParserChirho, VplParserConfigChirho, VplEntryChirho};
+pub use osis_parser_chirho::{OsisParserChirho, OsisParserConfigChirho, OsisDocumentChirho, OsisVerseChirho};
+pub use tei_parser_chirho::{TeiParserChirho, TeiParserConfigChirho, TeiDocumentChirho, TeiEntryChirho, TeiSenseChirho};
 
 /// Importer trait for creating modules from various formats.
 pub trait ImporterChirho {
@@ -35,7 +43,7 @@ pub fn parse_imp_chirho(content_chirho: &str) -> Vec<ImpEntryChirho> {
     let mut current_content_chirho = String::new();
 
     for line_chirho in content_chirho.lines() {
-        if line_chirho.starts_with("$$$") {
+        if let Some(stripped_chirho) = line_chirho.strip_prefix("$$$") {
             // Save previous entry
             if let Some(key_chirho) = current_key_chirho.take() {
                 entries_chirho.push(ImpEntryChirho {
@@ -45,7 +53,7 @@ pub fn parse_imp_chirho(content_chirho: &str) -> Vec<ImpEntryChirho> {
             }
 
             // Start new entry
-            current_key_chirho = Some(line_chirho[3..].trim().to_string());
+            current_key_chirho = Some(stripped_chirho.trim().to_string());
             current_content_chirho.clear();
         } else if current_key_chirho.is_some() {
             current_content_chirho.push_str(line_chirho);
@@ -66,7 +74,6 @@ pub fn parse_imp_chirho(content_chirho: &str) -> Vec<ImpEntryChirho> {
 
 // TODO: Implement OSIS parser
 // TODO: Implement TEI parser
-// TODO: Implement VPL (verse-per-line) parser
 
 #[cfg(test)]
 mod tests_chirho {

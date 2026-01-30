@@ -201,15 +201,15 @@ impl VersificationChirho {
         ];
 
         for (roman_chirho, arabic_chirho) in &roman_to_arabic_chirho {
-            if name_lower_chirho.starts_with(roman_chirho) {
-                let alias_chirho = format!("{}{}", arabic_chirho, &name_lower_chirho[roman_chirho.len()..]);
+            if let Some(suffix_chirho) = name_lower_chirho.strip_prefix(roman_chirho) {
+                let alias_chirho = format!("{}{}", arabic_chirho, suffix_chirho);
                 entries_chirho.push((alias_chirho.clone(), (testament_chirho, idx_chirho)));
                 // Also add without space: "1john"
                 let no_space_chirho = alias_chirho.replace(' ', "");
                 entries_chirho.push((no_space_chirho, (testament_chirho, idx_chirho)));
             }
-            if osis_lower_chirho.starts_with(roman_chirho.trim()) {
-                let alias_chirho = format!("{}{}", arabic_chirho.trim(), &osis_lower_chirho[roman_chirho.trim().len()..]);
+            if let Some(suffix_chirho) = osis_lower_chirho.strip_prefix(roman_chirho.trim()) {
+                let alias_chirho = format!("{}{}", arabic_chirho.trim(), suffix_chirho);
                 entries_chirho.push((alias_chirho, (testament_chirho, idx_chirho)));
             }
         }
@@ -289,6 +289,41 @@ pub fn kjv_chirho() -> &'static VersificationChirho {
         canons_chirho::kjv_chirho::create_kjv_chirho()
     });
     &KJV_CHIRHO
+}
+
+/// Get the Catholic versification system.
+pub fn catholic_chirho() -> &'static VersificationChirho {
+    static CATHOLIC_CHIRHO: LazyLock<VersificationChirho> = LazyLock::new(|| {
+        canons_chirho::catholic_chirho::create_catholic_chirho()
+    });
+    &CATHOLIC_CHIRHO
+}
+
+/// Get the LXX (Septuagint) versification system.
+pub fn lxx_chirho() -> &'static VersificationChirho {
+    static LXX_CHIRHO: LazyLock<VersificationChirho> = LazyLock::new(|| {
+        canons_chirho::lxx_chirho::create_lxx_chirho()
+    });
+    &LXX_CHIRHO
+}
+
+/// Get the Synodal versification system.
+pub fn synodal_chirho() -> &'static VersificationChirho {
+    static SYNODAL_CHIRHO: LazyLock<VersificationChirho> = LazyLock::new(|| {
+        canons_chirho::synodal_chirho::create_synodal_chirho()
+    });
+    &SYNODAL_CHIRHO
+}
+
+/// Get a versification system by name.
+pub fn get_versification_chirho(name_chirho: &str) -> Option<&'static VersificationChirho> {
+    match name_chirho.to_lowercase().as_str() {
+        "kjv" => Some(kjv_chirho()),
+        "catholic" => Some(catholic_chirho()),
+        "lxx" | "septuagint" => Some(lxx_chirho()),
+        "synodal" | "synodalprot" => Some(synodal_chirho()),
+        _ => None,
+    }
 }
 
 #[cfg(test)]

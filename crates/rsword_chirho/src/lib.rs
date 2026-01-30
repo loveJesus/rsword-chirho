@@ -19,12 +19,16 @@ pub mod keys_chirho;
 pub mod versification_chirho;
 pub mod storage_chirho;
 pub mod compression_chirho;
+pub mod cipher_chirho;
+pub mod cache_chirho;
 pub mod modules_chirho;
 pub mod filters_chirho;
 pub mod search_chirho;
 pub mod manager_chirho;
 pub mod transport_chirho;
 pub mod import_chirho;
+pub mod locale_chirho;
+pub mod parallels_chirho;
 
 // Re-exports
 pub use error_chirho::{ErrorChirho, ResultChirho};
@@ -34,7 +38,10 @@ pub use keys_chirho::list_key_chirho::ListKeyChirho;
 pub use modules_chirho::sw_module_chirho::SwModuleChirho;
 pub use modules_chirho::texts_chirho::RawTextChirho;
 pub use manager_chirho::sw_mgr_chirho::SwMgrChirho;
-pub use versification_chirho::VersificationChirho;
+pub use versification_chirho::{
+    VersificationChirho, TestamentChirho, BookInfoChirho,
+    kjv_chirho, catholic_chirho, lxx_chirho, synodal_chirho, get_versification_chirho,
+};
 pub use search_chirho::{
     SearchEngineChirho, SearchOptionsChirho, SearchTypeChirho,
     TantivySearchChirho, RegexSearchChirho,
@@ -44,6 +51,19 @@ pub use filters_chirho::{
     OsisToHtmlFilterChirho, OsisToPlainFilterChirho,
     ThmlToHtmlFilterChirho, ThmlToPlainFilterChirho,
     GbfToHtmlFilterChirho, GbfToPlainFilterChirho,
+};
+pub use locale_chirho::{
+    LocaleChirho, LocaleBookChirho, LocaleManagerChirho,
+    english_locale_chirho, get_locale_chirho, DEFAULT_LOCALE_CHIRHO,
+};
+pub use cipher_chirho::{
+    CipherChirho, CipherTypeChirho, SwCipherChirho,
+    SapphireCipherChirho, XorCipherChirho, NullCipherChirho,
+    create_cipher_chirho,
+};
+pub use parallels_chirho::{
+    ParallelPassageChirho, ParallelSetChirho, ParallelTypeChirho,
+    ParallelManagerChirho,
 };
 
 /// Library version
@@ -119,20 +139,15 @@ pub enum MarkupChirho {
 }
 
 /// Block types for compressed modules
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum BlockTypeChirho {
     /// Each verse compressed separately (value: 2)
     VerseBlocksChirho = 2,
     /// Each chapter compressed together (value: 3)
+    #[default]
     ChapterBlocksChirho = 3,
     /// Each book compressed together (value: 4)
     BookBlocksChirho = 4,
-}
-
-impl Default for BlockTypeChirho {
-    fn default() -> Self {
-        Self::ChapterBlocksChirho
-    }
 }
 
 /// Compression types

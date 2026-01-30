@@ -14,6 +14,7 @@ use crate::keys_chirho::{ListKeyChirho, StrKeyChirho};
 use super::{SearchEngineChirho, SearchOptionsChirho, SearchTypeChirho};
 
 /// Entry for regex search.
+#[derive(Debug, Clone)]
 pub struct SearchEntryChirho {
     /// Entry key (verse reference, lexicon key, etc.).
     pub key_chirho: String,

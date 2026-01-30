@@ -11,7 +11,7 @@ use regex::Regex;
 use std::sync::LazyLock;
 
 use crate::error_chirho::ResultChirho;
-use super::{FilterChirho, FilterOptionsChirho};
+use super::{escape_html_chirho, escape_html_attr_chirho, FilterChirho, FilterOptionsChirho};
 
 /// Compiled regex patterns for OSIS parsing.
 static OSIS_WORD_REGEX_CHIRHO: LazyLock<Regex> = LazyLock::new(|| {
@@ -72,6 +72,7 @@ impl OsisToHtmlFilterChirho {
     /// Process a word element with Strong's and morphology.
     fn process_word_chirho(&self, attrs_chirho: &str, content_chirho: &str) -> String {
         let mut result_chirho = String::new();
+        let escaped_content_chirho = escape_html_chirho(content_chirho);
 
         // Extract Strong's numbers
         let strongs_chirho: Vec<String> = OSIS_STRONGS_REGEX_CHIRHO
@@ -89,18 +90,21 @@ impl OsisToHtmlFilterChirho {
             let strongs_str_chirho = strongs_chirho.join(" ");
             result_chirho.push_str(&format!(
                 r#"<span class="word" data-strongs="{}">{}</span>"#,
-                strongs_str_chirho, content_chirho
+                escape_html_attr_chirho(&strongs_str_chirho),
+                escaped_content_chirho
             ));
 
             // Add Strong's number superscript
             for s_chirho in &strongs_chirho {
+                let escaped_strongs_chirho = escape_html_attr_chirho(s_chirho);
                 result_chirho.push_str(&format!(
                     r#"<sup class="strongs"><a href="strongs://{}">{}</a></sup>"#,
-                    s_chirho, s_chirho
+                    escaped_strongs_chirho,
+                    escape_html_chirho(s_chirho)
                 ));
             }
         } else {
-            result_chirho.push_str(content_chirho);
+            result_chirho.push_str(&escaped_content_chirho);
         }
 
         // Add morphology
@@ -108,7 +112,7 @@ impl OsisToHtmlFilterChirho {
             if let Some(m_chirho) = morph_chirho {
                 result_chirho.push_str(&format!(
                     r#"<sup class="morph">{}</sup>"#,
-                    m_chirho
+                    escape_html_chirho(&m_chirho)
                 ));
             }
         }
@@ -138,7 +142,7 @@ impl FilterChirho for OsisToHtmlFilterChirho {
         if self.options_chirho.footnotes_chirho {
             result_chirho = OSIS_NOTE_REGEX_CHIRHO
                 .replace_all(&result_chirho, |caps_chirho: &regex::Captures| {
-                    format!(r#"<span class="footnote">[{}]</span>"#, &caps_chirho[1])
+                    format!(r#"<span class="footnote">[{}]</span>"#, escape_html_chirho(&caps_chirho[1]))
                 })
                 .to_string();
         } else {
@@ -149,7 +153,7 @@ impl FilterChirho for OsisToHtmlFilterChirho {
         if self.options_chirho.headings_chirho {
             result_chirho = OSIS_TITLE_REGEX_CHIRHO
                 .replace_all(&result_chirho, |caps_chirho: &regex::Captures| {
-                    format!(r#"<h3 class="heading">{}</h3>"#, &caps_chirho[1])
+                    format!(r#"<h3 class="heading">{}</h3>"#, escape_html_chirho(&caps_chirho[1]))
                 })
                 .to_string();
         } else {
@@ -160,19 +164,26 @@ impl FilterChirho for OsisToHtmlFilterChirho {
         if self.options_chirho.scripref_chirho {
             result_chirho = OSIS_REFERENCE_REGEX_CHIRHO
                 .replace_all(&result_chirho, |caps_chirho: &regex::Captures| {
-                    format!(r#"<a class="scripref" href="bible://{0}">{0}</a>"#, &caps_chirho[1])
+                    let ref_chirho = &caps_chirho[1];
+                    format!(
+                        r#"<a class="scripref" href="bible://{}">{}</a>"#,
+                        escape_html_attr_chirho(ref_chirho),
+                        escape_html_chirho(ref_chirho)
+                    )
                 })
                 .to_string();
         } else {
             result_chirho = OSIS_REFERENCE_REGEX_CHIRHO
-                .replace_all(&result_chirho, "$1")
+                .replace_all(&result_chirho, |caps_chirho: &regex::Captures| {
+                    escape_html_chirho(&caps_chirho[1])
+                })
                 .to_string();
         }
 
         // Process divine name (LORD)
         result_chirho = OSIS_DIVINE_NAME_REGEX_CHIRHO
             .replace_all(&result_chirho, |caps_chirho: &regex::Captures| {
-                format!(r#"<span class="divine-name">{}</span>"#, &caps_chirho[1])
+                format!(r#"<span class="divine-name">{}</span>"#, escape_html_chirho(&caps_chirho[1]))
             })
             .to_string();
 
@@ -180,7 +191,7 @@ impl FilterChirho for OsisToHtmlFilterChirho {
         if self.options_chirho.red_letter_chirho {
             result_chirho = OSIS_JESUS_WORDS_REGEX_CHIRHO
                 .replace_all(&result_chirho, |caps_chirho: &regex::Captures| {
-                    format!(r#"<span class="jesus-words">{}</span>"#, &caps_chirho[1])
+                    format!(r#"<span class="jesus-words">{}</span>"#, escape_html_chirho(&caps_chirho[1]))
                 })
                 .to_string();
         }
@@ -191,8 +202,6 @@ impl FilterChirho for OsisToHtmlFilterChirho {
             .replace("</verse>", "</span>")
             .replace("<chapter ", "<div class=\"chapter\" ")
             .replace("</chapter>", "</div>")
-            .replace("<p>", "<p>")
-            .replace("</p>", "</p>")
             .replace("<lb/>", "<br/>")
             .replace("<lb />", "<br/>");
 

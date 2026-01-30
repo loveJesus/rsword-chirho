@@ -4,12 +4,16 @@
 
 //! Compression support for SWORD modules.
 
+mod lzss_chirho;
+
 use std::io::Read;
 use flate2::read::{ZlibDecoder, ZlibEncoder};
 use flate2::Compression;
 
 use crate::error_chirho::{ErrorChirho, ResultChirho};
 use crate::CompressionTypeChirho;
+
+pub use lzss_chirho::LzssCompressorChirho;
 
 /// Trait for compression/decompression.
 pub trait CompressorChirho: Send + Sync {
@@ -19,8 +23,8 @@ pub trait CompressorChirho: Send + Sync {
     /// Decompress data.
     fn decompress_chirho(&self, data_chirho: &[u8]) -> ResultChirho<Vec<u8>>;
 
-    /// Get the compression type.
-    fn compression_type_chirho(&self) -> CompressionTypeChirho;
+    /// Get the compressor name.
+    fn name_chirho(&self) -> &str;
 }
 
 /// No compression (passthrough).
@@ -35,8 +39,8 @@ impl CompressorChirho for NoCompressorChirho {
         Ok(data_chirho.to_vec())
     }
 
-    fn compression_type_chirho(&self) -> CompressionTypeChirho {
-        CompressionTypeChirho::NoneChirho
+    fn name_chirho(&self) -> &str {
+        "None"
     }
 }
 
@@ -84,8 +88,8 @@ impl CompressorChirho for ZipCompressorChirho {
         Ok(decompressed_chirho)
     }
 
-    fn compression_type_chirho(&self) -> CompressionTypeChirho {
-        CompressionTypeChirho::ZipChirho
+    fn name_chirho(&self) -> &str {
+        "ZIP"
     }
 }
 
@@ -133,8 +137,8 @@ impl CompressorChirho for Bzip2CompressorChirho {
         Ok(decompressed_chirho)
     }
 
-    fn compression_type_chirho(&self) -> CompressionTypeChirho {
-        CompressionTypeChirho::Bzip2Chirho
+    fn name_chirho(&self) -> &str {
+        "BZIP2"
     }
 }
 
@@ -178,8 +182,8 @@ impl CompressorChirho for XzCompressorChirho {
         Ok(decompressed_chirho)
     }
 
-    fn compression_type_chirho(&self) -> CompressionTypeChirho {
-        CompressionTypeChirho::XzChirho
+    fn name_chirho(&self) -> &str {
+        "XZ"
     }
 }
 
@@ -190,7 +194,7 @@ pub fn create_compressor_chirho(comp_type_chirho: CompressionTypeChirho) -> Box<
         CompressionTypeChirho::ZipChirho => Box::new(ZipCompressorChirho::new_chirho()),
         CompressionTypeChirho::Bzip2Chirho => Box::new(Bzip2CompressorChirho::new_chirho()),
         CompressionTypeChirho::XzChirho => Box::new(XzCompressorChirho::new_chirho()),
-        CompressionTypeChirho::LzssChirho => Box::new(NoCompressorChirho), // Legacy, not implemented
+        CompressionTypeChirho::LzssChirho => Box::new(LzssCompressorChirho::new_chirho()),
     }
 }
 

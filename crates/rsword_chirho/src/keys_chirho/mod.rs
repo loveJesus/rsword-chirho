@@ -15,9 +15,11 @@ pub mod verse_key_chirho;
 pub mod list_key_chirho;
 pub mod tree_key_chirho;
 pub mod str_key_chirho;
+pub mod date_key_chirho;
 
 pub use sw_key_chirho::SwKeyChirho;
 pub use verse_key_chirho::VerseKeyChirho;
 pub use list_key_chirho::ListKeyChirho;
 pub use tree_key_chirho::TreeKeyChirho;
 pub use str_key_chirho::StrKeyChirho;
+pub use date_key_chirho::DateKeyChirho;

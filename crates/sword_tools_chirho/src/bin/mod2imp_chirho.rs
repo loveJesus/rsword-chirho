@@ -105,7 +105,7 @@ fn run_chirho(args_chirho: ArgsChirho) -> Result<(), Box<dyn std::error::Error>>
                                 println!("{}", text_chirho);
                                 count_chirho += 1;
 
-                                if args_chirho.verbose_chirho && count_chirho % 1000 == 0 {
+                                if args_chirho.verbose_chirho && count_chirho.is_multiple_of(1000) {
                                     eprintln!("  Exported {} entries...", count_chirho);
                                 }
                             }
@@ -154,7 +154,7 @@ fn run_chirho(args_chirho: ArgsChirho) -> Result<(), Box<dyn std::error::Error>>
                                 println!("{}", text_chirho);
                                 count_chirho += 1;
 
-                                if args_chirho.verbose_chirho && count_chirho % 1000 == 0 {
+                                if args_chirho.verbose_chirho && count_chirho.is_multiple_of(1000) {
                                     eprintln!("  Exported {} entries...", count_chirho);
                                 }
                             }

@@ -247,12 +247,8 @@ impl VerseKeyChirho {
             TestamentChirho::NewChirho
         };
 
-        // Ensure testament is valid
-        if self.testament_chirho < 1 {
-            self.testament_chirho = 1;
-        } else if self.testament_chirho > 2 {
-            self.testament_chirho = 2;
-        }
+        // Ensure testament is valid (clamp to 1-2)
+        self.testament_chirho = self.testament_chirho.clamp(1, 2);
 
         // Ensure book is valid
         let max_book_chirho = self.v11n_chirho.book_count_chirho(testament_chirho);
@@ -452,6 +448,24 @@ impl VerseKeyChirho {
         &self.v11n_chirho
     }
 
+    /// Set the versification system.
+    pub fn set_versification_chirho(&mut self, v11n_chirho: &'static VersificationChirho) {
+        self.v11n_chirho = Arc::new(v11n_chirho.clone());
+        if self.auto_normalize_chirho {
+            self.normalize_chirho();
+        }
+        self.refresh_text_chirho();
+    }
+
+    /// Get the testament as a TestamentChirho enum.
+    pub fn testament_enum_chirho(&self) -> TestamentChirho {
+        if self.testament_chirho == 1 {
+            TestamentChirho::OldChirho
+        } else {
+            TestamentChirho::NewChirho
+        }
+    }
+
     /// Calculate the index for this verse position.
     pub fn calculate_index_chirho(&self) -> i64 {
         let testament_chirho = if self.testament_chirho == 1 {
@@ -612,25 +626,21 @@ impl SwKeyChirho for VerseKeyChirho {
         for _ in 0..steps_chirho.abs() {
             if self.verse_chirho > 1 {
                 self.verse_chirho -= 1;
+            } else if self.chapter_chirho > 1 {
+                self.chapter_chirho -= 1;
+                self.verse_chirho = self.get_verse_max_chirho();
+            } else if self.book_chirho > 0 {
+                self.book_chirho -= 1;
+                self.chapter_chirho = self.get_chapter_max_chirho();
+                self.verse_chirho = self.get_verse_max_chirho();
+            } else if self.testament_chirho == 2 {
+                self.testament_chirho = 1;
+                self.book_chirho = (self.v11n_chirho.book_count_chirho(TestamentChirho::OldChirho) - 1) as u8;
+                self.chapter_chirho = self.get_chapter_max_chirho();
+                self.verse_chirho = self.get_verse_max_chirho();
             } else {
-                if self.chapter_chirho > 1 {
-                    self.chapter_chirho -= 1;
-                    self.verse_chirho = self.get_verse_max_chirho();
-                } else {
-                    if self.book_chirho > 0 {
-                        self.book_chirho -= 1;
-                        self.chapter_chirho = self.get_chapter_max_chirho();
-                        self.verse_chirho = self.get_verse_max_chirho();
-                    } else if self.testament_chirho == 2 {
-                        self.testament_chirho = 1;
-                        self.book_chirho = (self.v11n_chirho.book_count_chirho(TestamentChirho::OldChirho) - 1) as u8;
-                        self.chapter_chirho = self.get_chapter_max_chirho();
-                        self.verse_chirho = self.get_verse_max_chirho();
-                    } else {
-                        // Beginning of Bible
-                        self.error_chirho = KeyErrorChirho::OutOfBoundsChirho;
-                    }
-                }
+                // Beginning of Bible
+                self.error_chirho = KeyErrorChirho::OutOfBoundsChirho;
             }
         }
 

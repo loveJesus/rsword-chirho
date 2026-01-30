@@ -19,9 +19,9 @@ use crate::filters_chirho::{
 };
 use crate::modules_chirho::{
     SwModuleChirho,
-    RawTextChirho, ZTextChirho,
-    RawComChirho, ZComChirho,
-    RawLdChirho, ZLdChirho,
+    RawTextChirho, RawText4Chirho, ZTextChirho, ZText4Chirho,
+    RawComChirho, RawCom4Chirho, ZComChirho, ZCom4Chirho,
+    RawLdChirho, RawLd4Chirho, ZLdChirho, ZLd4Chirho,
 };
 use crate::MarkupChirho;
 
@@ -158,7 +158,7 @@ impl LoadedModuleChirho {
     /// Read a verse or entry by key text.
     pub fn read_entry_chirho(&self, key_chirho: &str) -> ResultChirho<String> {
         match self.driver_type_chirho {
-            ModuleDriverTypeChirho::RawTextChirho | ModuleDriverTypeChirho::RawText4Chirho => {
+            ModuleDriverTypeChirho::RawTextChirho => {
                 let mut module_chirho = RawTextChirho::new_chirho(
                     &self.data_path_chirho,
                     self.config_chirho.clone(),
@@ -166,7 +166,15 @@ impl LoadedModuleChirho {
                 module_chirho.set_key_text_chirho(key_chirho)?;
                 module_chirho.get_raw_entry_chirho()
             }
-            ModuleDriverTypeChirho::ZTextChirho | ModuleDriverTypeChirho::ZText4Chirho => {
+            ModuleDriverTypeChirho::RawText4Chirho => {
+                let mut module_chirho = RawText4Chirho::new_chirho(
+                    &self.data_path_chirho,
+                    self.config_chirho.clone(),
+                )?;
+                module_chirho.set_key_text_chirho(key_chirho)?;
+                module_chirho.get_raw_entry_chirho()
+            }
+            ModuleDriverTypeChirho::ZTextChirho => {
                 let mut module_chirho = ZTextChirho::new_chirho(
                     &self.data_path_chirho,
                     self.config_chirho.clone(),
@@ -174,7 +182,15 @@ impl LoadedModuleChirho {
                 module_chirho.set_key_text_chirho(key_chirho)?;
                 module_chirho.get_raw_entry_chirho()
             }
-            ModuleDriverTypeChirho::RawComChirho | ModuleDriverTypeChirho::RawCom4Chirho => {
+            ModuleDriverTypeChirho::ZText4Chirho => {
+                let mut module_chirho = ZText4Chirho::new_chirho(
+                    &self.data_path_chirho,
+                    self.config_chirho.clone(),
+                )?;
+                module_chirho.set_key_text_chirho(key_chirho)?;
+                module_chirho.get_raw_entry_chirho()
+            }
+            ModuleDriverTypeChirho::RawComChirho => {
                 let mut module_chirho = RawComChirho::new_chirho(
                     &self.data_path_chirho,
                     self.config_chirho.clone(),
@@ -182,7 +198,15 @@ impl LoadedModuleChirho {
                 module_chirho.set_key_text_chirho(key_chirho)?;
                 module_chirho.get_raw_entry_chirho()
             }
-            ModuleDriverTypeChirho::ZComChirho | ModuleDriverTypeChirho::ZCom4Chirho => {
+            ModuleDriverTypeChirho::RawCom4Chirho => {
+                let mut module_chirho = RawCom4Chirho::new_chirho(
+                    &self.data_path_chirho,
+                    self.config_chirho.clone(),
+                )?;
+                module_chirho.set_key_text_chirho(key_chirho)?;
+                module_chirho.get_raw_entry_chirho()
+            }
+            ModuleDriverTypeChirho::ZComChirho => {
                 let mut module_chirho = ZComChirho::new_chirho(
                     &self.data_path_chirho,
                     self.config_chirho.clone(),
@@ -190,15 +214,37 @@ impl LoadedModuleChirho {
                 module_chirho.set_key_text_chirho(key_chirho)?;
                 module_chirho.get_raw_entry_chirho()
             }
-            ModuleDriverTypeChirho::RawLdChirho | ModuleDriverTypeChirho::RawLd4Chirho => {
+            ModuleDriverTypeChirho::ZCom4Chirho => {
+                let mut module_chirho = ZCom4Chirho::new_chirho(
+                    &self.data_path_chirho,
+                    self.config_chirho.clone(),
+                )?;
+                module_chirho.set_key_text_chirho(key_chirho)?;
+                module_chirho.get_raw_entry_chirho()
+            }
+            ModuleDriverTypeChirho::RawLdChirho => {
                 let mut module_chirho = RawLdChirho::new_chirho(
                     &self.data_path_chirho,
                     self.config_chirho.clone(),
                 )?;
                 module_chirho.get_entry_chirho(key_chirho)
             }
-            ModuleDriverTypeChirho::ZLdChirho | ModuleDriverTypeChirho::ZLd4Chirho => {
+            ModuleDriverTypeChirho::RawLd4Chirho => {
+                let mut module_chirho = RawLd4Chirho::new_chirho(
+                    &self.data_path_chirho,
+                    self.config_chirho.clone(),
+                )?;
+                module_chirho.get_entry_chirho(key_chirho)
+            }
+            ModuleDriverTypeChirho::ZLdChirho => {
                 let mut module_chirho = ZLdChirho::new_chirho(
+                    &self.data_path_chirho,
+                    self.config_chirho.clone(),
+                )?;
+                module_chirho.get_entry_chirho(key_chirho)
+            }
+            ModuleDriverTypeChirho::ZLd4Chirho => {
+                let mut module_chirho = ZLd4Chirho::new_chirho(
                     &self.data_path_chirho,
                     self.config_chirho.clone(),
                 )?;
@@ -316,6 +362,158 @@ pub fn load_module_chirho(
         config_chirho: config_chirho.clone(),
         data_path_chirho: full_path_chirho,
         driver_type_chirho,
+    })
+}
+
+/// Module creation options.
+#[derive(Debug, Clone)]
+pub struct CreateModuleOptionsChirho {
+    /// Module driver type.
+    pub driver_type_chirho: ModuleDriverTypeChirho,
+    /// Module name.
+    pub name_chirho: String,
+    /// Module description.
+    pub description_chirho: Option<String>,
+    /// Module language (ISO code).
+    pub language_chirho: Option<String>,
+    /// Versification system (for Bible modules).
+    pub versification_chirho: Option<String>,
+    /// Source markup type.
+    pub source_type_chirho: Option<String>,
+}
+
+impl CreateModuleOptionsChirho {
+    /// Create options for a new module.
+    pub fn new_chirho(name_chirho: &str, driver_type_chirho: ModuleDriverTypeChirho) -> Self {
+        Self {
+            driver_type_chirho,
+            name_chirho: name_chirho.to_string(),
+            description_chirho: None,
+            language_chirho: None,
+            versification_chirho: None,
+            source_type_chirho: None,
+        }
+    }
+
+    /// Set the module description.
+    pub fn with_description_chirho(mut self, desc_chirho: &str) -> Self {
+        self.description_chirho = Some(desc_chirho.to_string());
+        self
+    }
+
+    /// Set the module language.
+    pub fn with_language_chirho(mut self, lang_chirho: &str) -> Self {
+        self.language_chirho = Some(lang_chirho.to_string());
+        self
+    }
+
+    /// Set the versification system.
+    pub fn with_versification_chirho(mut self, v11n_chirho: &str) -> Self {
+        self.versification_chirho = Some(v11n_chirho.to_string());
+        self
+    }
+
+    /// Set the source type.
+    pub fn with_source_type_chirho(mut self, source_chirho: &str) -> Self {
+        self.source_type_chirho = Some(source_chirho.to_string());
+        self
+    }
+}
+
+/// Create a new SWORD module at the specified path.
+///
+/// This creates the necessary data files and configuration for a new module.
+/// The returned LoadedModuleChirho can be used to write entries to the module.
+///
+/// # Arguments
+/// * `base_path_chirho` - Base path for the module data files
+/// * `options_chirho` - Module creation options
+///
+/// # Returns
+/// A LoadedModuleChirho that can be used to write entries
+pub fn create_module_chirho(
+    base_path_chirho: &Path,
+    options_chirho: &CreateModuleOptionsChirho,
+) -> ResultChirho<LoadedModuleChirho> {
+    use crate::storage_chirho::{RawVerseChirho, RawVerse4Chirho, RawStrChirho};
+    use crate::modules_chirho::RawGenBookChirho;
+
+    // Ensure base directory exists
+    std::fs::create_dir_all(base_path_chirho).map_err(ErrorChirho::IoChirho)?;
+
+    // Create the storage files based on driver type
+    match options_chirho.driver_type_chirho {
+        ModuleDriverTypeChirho::RawTextChirho | ModuleDriverTypeChirho::RawComChirho => {
+            RawVerseChirho::create_chirho(base_path_chirho)?;
+        }
+        ModuleDriverTypeChirho::RawText4Chirho | ModuleDriverTypeChirho::RawCom4Chirho => {
+            RawVerse4Chirho::create_chirho(base_path_chirho)?;
+        }
+        ModuleDriverTypeChirho::RawLdChirho | ModuleDriverTypeChirho::RawLd4Chirho => {
+            let basename_chirho = base_path_chirho.file_name()
+                .and_then(|n| n.to_str())
+                .unwrap_or("module");
+            RawStrChirho::create_chirho(base_path_chirho, basename_chirho)?;
+        }
+        ModuleDriverTypeChirho::RawGenBookChirho => {
+            let basename_chirho = base_path_chirho.file_name()
+                .and_then(|n| n.to_str())
+                .unwrap_or("module");
+            RawGenBookChirho::create_chirho(base_path_chirho, basename_chirho)?;
+        }
+        ModuleDriverTypeChirho::ZTextChirho
+        | ModuleDriverTypeChirho::ZText4Chirho
+        | ModuleDriverTypeChirho::ZComChirho
+        | ModuleDriverTypeChirho::ZCom4Chirho
+        | ModuleDriverTypeChirho::ZLdChirho
+        | ModuleDriverTypeChirho::ZLd4Chirho => {
+            return Err(ErrorChirho::generic_chirho(
+                "Creating compressed modules directly is not supported. Create a raw module and use mod2zmod to compress.".to_string()
+            ));
+        }
+        ModuleDriverTypeChirho::UnknownChirho => {
+            return Err(ErrorChirho::invalid_config_chirho("Unknown driver type"));
+        }
+    }
+
+    // Build module configuration
+    let mut config_chirho = ModuleConfigChirho::new_chirho(options_chirho.name_chirho.clone());
+
+    let driver_str_chirho = match options_chirho.driver_type_chirho {
+        ModuleDriverTypeChirho::RawTextChirho => "RawText",
+        ModuleDriverTypeChirho::RawText4Chirho => "RawText4",
+        ModuleDriverTypeChirho::RawComChirho => "RawCom",
+        ModuleDriverTypeChirho::RawCom4Chirho => "RawCom4",
+        ModuleDriverTypeChirho::RawLdChirho => "RawLD",
+        ModuleDriverTypeChirho::RawLd4Chirho => "RawLD4",
+        ModuleDriverTypeChirho::RawGenBookChirho => "RawGenBook",
+        _ => "RawText",
+    };
+
+    config_chirho.set_chirho("ModDrv", driver_str_chirho);
+    config_chirho.set_chirho("DataPath", base_path_chirho.to_str().unwrap_or("."));
+
+    if let Some(ref desc_chirho) = options_chirho.description_chirho {
+        config_chirho.set_chirho("Description", desc_chirho);
+    }
+
+    if let Some(ref lang_chirho) = options_chirho.language_chirho {
+        config_chirho.set_chirho("Lang", lang_chirho);
+    }
+
+    if let Some(ref v11n_chirho) = options_chirho.versification_chirho {
+        config_chirho.set_chirho("Versification", v11n_chirho);
+    }
+
+    if let Some(ref source_chirho) = options_chirho.source_type_chirho {
+        config_chirho.set_chirho("SourceType", source_chirho);
+    }
+
+    Ok(LoadedModuleChirho {
+        name_chirho: options_chirho.name_chirho.clone(),
+        config_chirho,
+        data_path_chirho: base_path_chirho.to_path_buf(),
+        driver_type_chirho: options_chirho.driver_type_chirho,
     })
 }
 

@@ -32,12 +32,38 @@ pub struct RawTextChirho {
 }
 
 impl RawTextChirho {
-    /// Create a new RawText module from a path and configuration.
+    /// Create a new RawText module from a path and configuration (read-only).
     pub fn new_chirho<P: AsRef<Path>>(
         path_chirho: P,
         config_chirho: ModuleConfigChirho,
     ) -> ResultChirho<Self> {
         let storage_chirho = RawVerseChirho::open_chirho(path_chirho)?;
+
+        // Get versification from config or default to KJV
+        let v11n_name_chirho = config_chirho.versification_chirho();
+        let v11n_chirho = if v11n_name_chirho == "KJV" {
+            Arc::new(kjv_chirho().clone())
+        } else {
+            // TODO: Support other versification systems
+            Arc::new(kjv_chirho().clone())
+        };
+
+        let key_chirho = VerseKeyChirho::with_versification_chirho(v11n_chirho.clone());
+
+        Ok(Self {
+            base_chirho: ModuleBaseChirho::new_chirho(config_chirho),
+            storage_chirho,
+            key_chirho,
+            v11n_chirho,
+        })
+    }
+
+    /// Create a new RawText module with read-write access for writing verses.
+    pub fn new_rw_chirho<P: AsRef<Path>>(
+        path_chirho: P,
+        config_chirho: ModuleConfigChirho,
+    ) -> ResultChirho<Self> {
+        let storage_chirho = RawVerseChirho::open_rw_chirho(path_chirho)?;
 
         // Get versification from config or default to KJV
         let v11n_name_chirho = config_chirho.versification_chirho();
@@ -109,6 +135,69 @@ impl RawTextChirho {
     pub fn get_verse_chirho(&mut self, reference_chirho: &str) -> ResultChirho<String> {
         self.set_key_text_chirho(reference_chirho)?;
         self.read_current_chirho()
+    }
+
+    /// Write text at the current key position.
+    ///
+    /// # Arguments
+    /// * `text_chirho` - The text content to write
+    pub fn write_verse_chirho(&mut self, text_chirho: &str) -> ResultChirho<()> {
+        let testament_chirho = self.key_chirho.get_testament_chirho();
+        let index_chirho = self.calculate_verse_index_chirho();
+        self.storage_chirho.write_verse_chirho(testament_chirho, index_chirho, text_chirho)
+    }
+
+    /// Write text at a specific verse reference.
+    ///
+    /// # Arguments
+    /// * `reference_chirho` - The verse reference (e.g., "Gen 1:1")
+    /// * `text_chirho` - The text content to write
+    pub fn write_verse_at_chirho(&mut self, reference_chirho: &str, text_chirho: &str) -> ResultChirho<()> {
+        self.set_key_text_chirho(reference_chirho)?;
+        self.write_verse_chirho(text_chirho)
+    }
+
+    /// Link the current verse to another verse (make it reference the same text).
+    ///
+    /// Note: Both verses must be in the same testament for linking to work.
+    ///
+    /// # Arguments
+    /// * `source_reference_chirho` - The verse reference to link to
+    pub fn link_verse_chirho(&mut self, source_reference_chirho: &str) -> ResultChirho<()> {
+        let dest_testament_chirho = self.key_chirho.get_testament_chirho();
+        let dest_index_chirho = self.calculate_verse_index_chirho();
+
+        // Parse the source reference
+        let mut source_key_chirho = VerseKeyChirho::with_versification_chirho(self.v11n_chirho.clone());
+        source_key_chirho.parse_chirho(source_reference_chirho)?;
+
+        let source_testament_chirho = source_key_chirho.get_testament_chirho();
+        if source_testament_chirho != dest_testament_chirho {
+            return Err(ErrorChirho::generic_chirho(
+                "Cannot link verses across testaments".to_string()
+            ));
+        }
+
+        let source_testament_enum_chirho = if source_testament_chirho == 1 {
+            TestamentChirho::OldChirho
+        } else {
+            TestamentChirho::NewChirho
+        };
+
+        let source_index_chirho = self.v11n_chirho
+            .calculate_index_chirho(
+                source_testament_enum_chirho,
+                source_key_chirho.get_book_chirho() as usize,
+                source_key_chirho.get_chapter_chirho() as u8,
+                source_key_chirho.get_verse_chirho() as u8,
+            )
+            .unwrap_or(0);
+
+        self.storage_chirho.link_verse_chirho(
+            dest_testament_chirho,
+            dest_index_chirho,
+            source_index_chirho,
+        )
     }
 
     /// Iterate through all verses from current position to end.

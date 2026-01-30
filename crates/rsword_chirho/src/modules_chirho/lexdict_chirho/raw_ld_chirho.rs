@@ -126,6 +126,17 @@ impl RawLdChirho {
         Ok(matches_chirho)
     }
 
+    /// Write an entry to the lexicon.
+    ///
+    /// # Arguments
+    /// * `key_chirho` - The entry key (e.g., Strong's number "G25")
+    /// * `value_chirho` - The entry content/definition
+    pub fn write_entry_chirho(&mut self, key_chirho: &str, value_chirho: &str) -> ResultChirho<()> {
+        self.storage_chirho.write_entry_chirho(key_chirho, value_chirho)?;
+        self.entry_count_chirho = self.storage_chirho.entry_count_chirho()?;
+        Ok(())
+    }
+
     /// Iterate through all entries.
     pub fn iter_chirho(&mut self) -> RawLdIteratorChirho<'_> {
         RawLdIteratorChirho {

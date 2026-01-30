@@ -96,7 +96,7 @@ fn run_chirho(args_chirho: ArgsChirho) -> Result<(), Box<dyn std::error::Error>>
 
                 count_chirho += 1;
 
-                if args_chirho.verbose_chirho && count_chirho % 100 == 0 {
+                if args_chirho.verbose_chirho && count_chirho.is_multiple_of(100) {
                     println!("  Imported {} verses...", count_chirho);
                 }
             }

@@ -20,6 +20,9 @@ use std::path::PathBuf;
 use rsword_chirho::storage_chirho::RawVerseChirho;
 use rsword_chirho::versification_chirho::{kjv_chirho, TestamentChirho, VersificationChirho};
 
+/// Type alias for verse data: (testament, verse_index, text)
+type VerseDataChirho = (TestamentChirho, u32, String);
+
 /// Create SWORD module from OSIS XML.
 #[derive(Parser, Debug)]
 #[command(name = "osis2mod_chirho")]
@@ -99,7 +102,7 @@ fn run_chirho(args_chirho: ArgsChirho) -> Result<(), Box<dyn std::error::Error>>
         storage_chirho.write_verse_chirho(testament_num_chirho, *idx_off_chirho, text_chirho)?;
         count_chirho += 1;
 
-        if args_chirho.verbose_chirho && count_chirho % 1000 == 0 {
+        if args_chirho.verbose_chirho && count_chirho.is_multiple_of(1000) {
             println!("  Imported {} verses...", count_chirho);
         }
     }
@@ -164,8 +167,8 @@ About=Created by osis2mod_chirho from rsword-chirho
 fn parse_osis_chirho(
     content_chirho: &str,
     v11n_chirho: &VersificationChirho,
-) -> Result<Vec<(TestamentChirho, u32, String)>, Box<dyn std::error::Error>> {
-    let mut verses_chirho: Vec<(TestamentChirho, u32, String)> = Vec::new();
+) -> Result<Vec<VerseDataChirho>, Box<dyn std::error::Error>> {
+    let mut verses_chirho: Vec<VerseDataChirho> = Vec::new();
     let mut reader_chirho = Reader::from_str(content_chirho);
     reader_chirho.config_mut().trim_text(false);
 

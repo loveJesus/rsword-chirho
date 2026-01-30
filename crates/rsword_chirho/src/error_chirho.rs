@@ -163,6 +163,13 @@ pub enum ErrorChirho {
         message_chirho: String,
     },
 
+    /// General parsing error
+    #[error("Parse error: {message_chirho}")]
+    ParseChirho {
+        /// Description of the parse error
+        message_chirho: String,
+    },
+
     /// Encoding error
     #[error("Encoding error: {message_chirho}")]
     EncodingChirho {
@@ -266,6 +273,13 @@ impl ErrorChirho {
     /// Create a search error.
     pub fn search_chirho<S: Into<String>>(message_chirho: S) -> Self {
         Self::SearchChirho {
+            message_chirho: message_chirho.into(),
+        }
+    }
+
+    /// Create a parse error.
+    pub fn parse_chirho<S: Into<String>>(message_chirho: S) -> Self {
+        Self::ParseChirho {
             message_chirho: message_chirho.into(),
         }
     }

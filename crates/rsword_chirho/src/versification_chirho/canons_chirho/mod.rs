@@ -5,3 +5,8 @@
 //! Canon data for various versification systems.
 
 pub mod kjv_chirho;
+pub mod catholic_chirho;
+pub mod lxx_chirho;
+pub mod synodal_chirho;
+pub mod luther_chirho;
+pub mod vulgate_chirho;

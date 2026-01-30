@@ -328,6 +328,47 @@ impl ZBlockIndexChirho {
     }
 }
 
+/// Index entry for zText4 compressed verse format (12 bytes).
+/// Uses 4-byte size field instead of 2-byte to support larger entries.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ZVerse4IndexChirho {
+    /// Block number containing this verse.
+    pub block_num_chirho: u32,
+    /// Offset within the uncompressed block.
+    pub offset_in_block_chirho: u32,
+    /// Size of the verse in uncompressed form (4-byte).
+    pub size_chirho: u32,
+}
+
+impl ZVerse4IndexChirho {
+    /// Size of a zVerse4 index entry in bytes.
+    pub const SIZE_CHIRHO: usize = 12;
+
+    /// Read from a byte slice.
+    pub fn from_bytes_chirho(data_chirho: &[u8]) -> Self {
+        debug_assert!(data_chirho.len() >= Self::SIZE_CHIRHO);
+        Self {
+            block_num_chirho: read_u32_sword_chirho(&data_chirho[0..4]),
+            offset_in_block_chirho: read_u32_sword_chirho(&data_chirho[4..8]),
+            size_chirho: read_u32_sword_chirho(&data_chirho[8..12]),
+        }
+    }
+
+    /// Write to a byte array.
+    pub fn to_bytes_chirho(&self) -> [u8; 12] {
+        let mut buf_chirho = [0u8; 12];
+        buf_chirho[0..4].copy_from_slice(&write_u32_sword_chirho(self.block_num_chirho));
+        buf_chirho[4..8].copy_from_slice(&write_u32_sword_chirho(self.offset_in_block_chirho));
+        buf_chirho[8..12].copy_from_slice(&write_u32_sword_chirho(self.size_chirho));
+        buf_chirho
+    }
+
+    /// Check if this entry is empty (no text).
+    pub fn is_empty_chirho(&self) -> bool {
+        self.size_chirho == 0
+    }
+}
+
 #[cfg(test)]
 mod tests_chirho {
     use super::*;

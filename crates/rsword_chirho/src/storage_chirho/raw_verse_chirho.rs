@@ -36,7 +36,7 @@ pub struct RawVerseChirho {
 }
 
 impl RawVerseChirho {
-    /// Open an existing RawVerse module.
+    /// Open an existing RawVerse module (read-only).
     pub fn open_chirho<P: AsRef<Path>>(path_chirho: P) -> ResultChirho<Self> {
         let path_chirho = path_chirho.as_ref().to_path_buf();
 
@@ -44,6 +44,44 @@ impl RawVerseChirho {
         let nt_idx_chirho = File::open(path_chirho.join("nt.vss")).ok();
         let ot_text_chirho = File::open(path_chirho.join("ot")).ok();
         let nt_text_chirho = File::open(path_chirho.join("nt")).ok();
+
+        if ot_idx_chirho.is_none() && nt_idx_chirho.is_none() {
+            return Err(ErrorChirho::InvalidModulePathChirho { path_chirho });
+        }
+
+        Ok(Self {
+            path_chirho,
+            ot_idx_chirho,
+            nt_idx_chirho,
+            ot_text_chirho,
+            nt_text_chirho,
+        })
+    }
+
+    /// Open an existing RawVerse module for read-write access.
+    pub fn open_rw_chirho<P: AsRef<Path>>(path_chirho: P) -> ResultChirho<Self> {
+        let path_chirho = path_chirho.as_ref().to_path_buf();
+
+        let ot_idx_chirho = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .open(path_chirho.join("ot.vss"))
+            .ok();
+        let nt_idx_chirho = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .open(path_chirho.join("nt.vss"))
+            .ok();
+        let ot_text_chirho = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .open(path_chirho.join("ot"))
+            .ok();
+        let nt_text_chirho = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .open(path_chirho.join("nt"))
+            .ok();
 
         if ot_idx_chirho.is_none() && nt_idx_chirho.is_none() {
             return Err(ErrorChirho::InvalidModulePathChirho { path_chirho });

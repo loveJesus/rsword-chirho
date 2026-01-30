@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TEI.2>
+  <teiHeader>
+    <fileDesc>
+      <titleStmt>
+        <title>Test Lexicon</title>
+      </titleStmt>
+    </fileDesc>
+  </teiHeader>
+  <text>
+    <body>
+      <entry n="G26">
+        <orth>agape</orth>
+        <def>love; charity; affection</def>
+      </entry>
+      <entry n="G2316">
+        <orth>theos</orth>
+        <def>God; a deity; a magistrate</def>
+      </entry>
+      <entry n="G2889">
+        <orth>kosmos</orth>
+        <def>world; orderly arrangement; decoration</def>
+      </entry>
+      <entry n="H430">
+        <orth>elohim</orth>
+        <def>God; gods; judges; angels</def>
+      </entry>
+      <entry n="H7225">
+        <orth>reshith</orth>
+        <def>beginning; first; chief</def>
+      </entry>
+    </body>
+  </text>
+</TEI.2>

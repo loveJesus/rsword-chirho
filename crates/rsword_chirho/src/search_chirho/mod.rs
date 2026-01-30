@@ -7,22 +7,44 @@
 //! Provides two search backends:
 //! - `TantivySearchChirho`: Fast indexed search using tantivy
 //! - `RegexSearchChirho`: Simple regex-based search (no index required)
+//!
+//! Also provides query parsing for advanced search syntax:
+//! - Boolean operators: AND, OR, NOT
+//! - Phrase proximity: "word1 word2"~N
+//! - Wildcards: lov*, ?ove
+//! - Field-specific: strongs:G26
+//! - Fuzzy: love~
 
 mod tantivy_chirho;
 mod regex_chirho;
+mod query_parser_chirho;
+mod query_builder_chirho;
+mod parallel_chirho;
 
 pub use tantivy_chirho::TantivySearchChirho;
 pub use regex_chirho::{RegexSearchChirho, SearchEntryChirho};
+pub use query_parser_chirho::{
+    QueryParserChirho, QueryNodeChirho, SearchScopeChirho, to_tantivy_query_chirho,
+};
+pub use query_builder_chirho::{
+    TantivyQueryBuilderChirho, SearchBuilderChirho, ScoredResultChirho,
+};
+pub use parallel_chirho::{
+    ParallelSearchChirho, ParallelSearchConfigChirho, TestamentPartitionChirho,
+    MultiModuleResultChirho, search_multi_module_parallel_chirho,
+};
 
 use crate::error_chirho::ResultChirho;
 use crate::keys_chirho::ListKeyChirho;
 
 /// Search type.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Default)]
 pub enum SearchTypeChirho {
     /// Regex search.
     RegexChirho,
     /// Phrase search (literal text).
+    #[default]
     PhraseChirho,
     /// Multi-word search (all words must be present).
     MultiWordChirho,
@@ -32,11 +54,6 @@ pub enum SearchTypeChirho {
     ExternalChirho,
 }
 
-impl Default for SearchTypeChirho {
-    fn default() -> Self {
-        Self::PhraseChirho
-    }
-}
 
 /// Search options.
 #[derive(Debug, Clone, Default)]

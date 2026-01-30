@@ -66,8 +66,7 @@ impl TantivySearchChirho {
     /// Open an existing index.
     fn open_index_chirho(&mut self) -> ResultChirho<()> {
         let index_chirho = Index::open_in_dir(&self.index_path_chirho)
-            .map_err(|e_chirho| ErrorChirho::IoChirho(std::io::Error::new(
-                std::io::ErrorKind::Other,
+            .map_err(|e_chirho| ErrorChirho::IoChirho(std::io::Error::other(
                 format!("Failed to open index: {}", e_chirho)
             )))?;
 
@@ -87,8 +86,7 @@ impl TantivySearchChirho {
         doc_chirho.add_text(self.text_field_chirho, text_chirho);
 
         writer_chirho.add_document(doc_chirho)
-            .map_err(|e_chirho| ErrorChirho::IoChirho(std::io::Error::new(
-                std::io::ErrorKind::Other,
+            .map_err(|e_chirho| ErrorChirho::IoChirho(std::io::Error::other(
                 format!("Failed to add document: {}", e_chirho)
             )))?;
 
@@ -102,15 +100,13 @@ impl TantivySearchChirho {
 
         // Create or open index
         let index_chirho = Index::create_in_dir(&self.index_path_chirho, self.schema_chirho.clone())
-            .map_err(|e_chirho| ErrorChirho::IoChirho(std::io::Error::new(
-                std::io::ErrorKind::Other,
+            .map_err(|e_chirho| ErrorChirho::IoChirho(std::io::Error::other(
                 format!("Failed to create index: {}", e_chirho)
             )))?;
 
         // Create writer with 50MB heap
         let writer_chirho = index_chirho.writer(50_000_000)
-            .map_err(|e_chirho| ErrorChirho::IoChirho(std::io::Error::new(
-                std::io::ErrorKind::Other,
+            .map_err(|e_chirho| ErrorChirho::IoChirho(std::io::Error::other(
                 format!("Failed to create writer: {}", e_chirho)
             )))?;
 
@@ -121,8 +117,7 @@ impl TantivySearchChirho {
     /// Commit the index writer.
     pub fn commit_chirho(&self, writer_chirho: &mut IndexWriter) -> ResultChirho<()> {
         writer_chirho.commit()
-            .map_err(|e_chirho| ErrorChirho::IoChirho(std::io::Error::new(
-                std::io::ErrorKind::Other,
+            .map_err(|e_chirho| ErrorChirho::IoChirho(std::io::Error::other(
                 format!("Failed to commit: {}", e_chirho)
             )))?;
         Ok(())
@@ -140,8 +135,7 @@ impl TantivySearchChirho {
             })?;
 
         let reader_chirho = index_chirho.reader()
-            .map_err(|e_chirho| ErrorChirho::IoChirho(std::io::Error::new(
-                std::io::ErrorKind::Other,
+            .map_err(|e_chirho| ErrorChirho::IoChirho(std::io::Error::other(
                 format!("Failed to create reader: {}", e_chirho)
             )))?;
 
@@ -149,14 +143,12 @@ impl TantivySearchChirho {
 
         let query_parser_chirho = QueryParser::for_index(index_chirho, vec![self.text_field_chirho]);
         let query_chirho = query_parser_chirho.parse_query(query_str_chirho)
-            .map_err(|e_chirho| ErrorChirho::IoChirho(std::io::Error::new(
-                std::io::ErrorKind::Other,
+            .map_err(|e_chirho| ErrorChirho::IoChirho(std::io::Error::other(
                 format!("Failed to parse query: {}", e_chirho)
             )))?;
 
         let top_docs_chirho = searcher_chirho.search(&query_chirho, &TopDocs::with_limit(max_results_chirho))
-            .map_err(|e_chirho| ErrorChirho::IoChirho(std::io::Error::new(
-                std::io::ErrorKind::Other,
+            .map_err(|e_chirho| ErrorChirho::IoChirho(std::io::Error::other(
                 format!("Search failed: {}", e_chirho)
             )))?;
 
@@ -164,8 +156,7 @@ impl TantivySearchChirho {
 
         for (_score_chirho, doc_address_chirho) in top_docs_chirho {
             let doc_chirho: TantivyDocument = searcher_chirho.doc(doc_address_chirho)
-                .map_err(|e_chirho| ErrorChirho::IoChirho(std::io::Error::new(
-                    std::io::ErrorKind::Other,
+                .map_err(|e_chirho| ErrorChirho::IoChirho(std::io::Error::other(
                     format!("Failed to retrieve doc: {}", e_chirho)
                 )))?;
 
@@ -192,22 +183,19 @@ impl TantivySearchChirho {
             })?;
 
         let reader_chirho = index_chirho.reader()
-            .map_err(|e_chirho| ErrorChirho::IoChirho(std::io::Error::new(
-                std::io::ErrorKind::Other,
+            .map_err(|e_chirho| ErrorChirho::IoChirho(std::io::Error::other(
                 format!("Failed to create reader: {}", e_chirho)
             )))?;
 
         let searcher_chirho = reader_chirho.searcher();
 
         let query_chirho = RegexQuery::from_pattern(pattern_chirho, self.text_field_chirho)
-            .map_err(|e_chirho| ErrorChirho::IoChirho(std::io::Error::new(
-                std::io::ErrorKind::Other,
+            .map_err(|e_chirho| ErrorChirho::IoChirho(std::io::Error::other(
                 format!("Invalid regex: {}", e_chirho)
             )))?;
 
         let top_docs_chirho = searcher_chirho.search(&query_chirho, &TopDocs::with_limit(max_results_chirho))
-            .map_err(|e_chirho| ErrorChirho::IoChirho(std::io::Error::new(
-                std::io::ErrorKind::Other,
+            .map_err(|e_chirho| ErrorChirho::IoChirho(std::io::Error::other(
                 format!("Search failed: {}", e_chirho)
             )))?;
 
@@ -215,8 +203,7 @@ impl TantivySearchChirho {
 
         for (_score_chirho, doc_address_chirho) in top_docs_chirho {
             let doc_chirho: TantivyDocument = searcher_chirho.doc(doc_address_chirho)
-                .map_err(|e_chirho| ErrorChirho::IoChirho(std::io::Error::new(
-                    std::io::ErrorKind::Other,
+                .map_err(|e_chirho| ErrorChirho::IoChirho(std::io::Error::other(
                     format!("Failed to retrieve doc: {}", e_chirho)
                 )))?;
 
@@ -270,8 +257,7 @@ impl SearchEngineChirho for TantivySearchChirho {
         fs::create_dir_all(&self.index_path_chirho)?;
 
         let index_chirho = Index::create_in_dir(&self.index_path_chirho, self.schema_chirho.clone())
-            .map_err(|e_chirho| ErrorChirho::IoChirho(std::io::Error::new(
-                std::io::ErrorKind::Other,
+            .map_err(|e_chirho| ErrorChirho::IoChirho(std::io::Error::other(
                 format!("Failed to create index: {}", e_chirho)
             )))?;
 

@@ -4,12 +4,16 @@
 
 //! Commentary module implementations.
 //!
-//! Provides RawCom, RawCom4, zCom, and zCom4 module drivers.
+//! Provides RawCom, RawCom4, zCom, zCom4, and HREFCom module drivers.
 
 mod raw_com_chirho;
+mod raw_com4_chirho;
 mod z_com_chirho;
+mod z_com4_chirho;
+mod href_com_chirho;
 
 pub use raw_com_chirho::{RawComChirho, RawComIteratorChirho};
+pub use raw_com4_chirho::{RawCom4Chirho, RawCom4IteratorChirho};
 pub use z_com_chirho::{ZComChirho, ZComIteratorChirho};
-
-// TODO: Implement RawCom4Chirho, ZCom4Chirho
+pub use z_com4_chirho::{ZCom4Chirho, ZCom4IteratorChirho};
+pub use href_com_chirho::HrefComChirho;

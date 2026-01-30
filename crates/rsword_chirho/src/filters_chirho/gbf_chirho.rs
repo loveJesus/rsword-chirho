@@ -11,7 +11,7 @@ use regex::Regex;
 use std::sync::LazyLock;
 
 use crate::error_chirho::ResultChirho;
-use super::{FilterChirho, FilterOptionsChirho};
+use super::{escape_html_chirho, escape_html_attr_chirho, FilterChirho, FilterOptionsChirho};
 
 /// Regex for GBF formatting codes.
 static GBF_TAG_REGEX_CHIRHO: LazyLock<Regex> = LazyLock::new(|| {
@@ -73,9 +73,11 @@ impl FilterChirho for GbfToHtmlFilterChirho {
                 .replace_all(&result_chirho, |caps_chirho: &regex::Captures| {
                     let prefix_chirho = &caps_chirho[1];
                     let num_chirho = &caps_chirho[2];
+                    let strongs_chirho = format!("{}{}", prefix_chirho, num_chirho);
                     format!(
-                        r#"<sup class="strongs"><a href="strongs://{0}{1}">{0}{1}</a></sup>"#,
-                        prefix_chirho, num_chirho
+                        r#"<sup class="strongs"><a href="strongs://{}">{}</a></sup>"#,
+                        escape_html_attr_chirho(&strongs_chirho),
+                        escape_html_chirho(&strongs_chirho)
                     )
                 })
                 .to_string();
@@ -87,7 +89,7 @@ impl FilterChirho for GbfToHtmlFilterChirho {
         if self.options_chirho.morph_chirho {
             result_chirho = GBF_MORPH_REGEX_CHIRHO
                 .replace_all(&result_chirho, |caps_chirho: &regex::Captures| {
-                    format!(r#"<sup class="morph">{}</sup>"#, &caps_chirho[1])
+                    format!(r#"<sup class="morph">{}</sup>"#, escape_html_chirho(&caps_chirho[1]))
                 })
                 .to_string();
         } else {
@@ -98,7 +100,7 @@ impl FilterChirho for GbfToHtmlFilterChirho {
         if self.options_chirho.footnotes_chirho {
             result_chirho = GBF_FOOTNOTE_REGEX_CHIRHO
                 .replace_all(&result_chirho, |caps_chirho: &regex::Captures| {
-                    format!(r#"<span class="footnote">[{}]</span>"#, &caps_chirho[1])
+                    format!(r#"<span class="footnote">[{}]</span>"#, escape_html_chirho(&caps_chirho[1]))
                 })
                 .to_string();
         } else {
@@ -109,9 +111,11 @@ impl FilterChirho for GbfToHtmlFilterChirho {
         if self.options_chirho.xrefs_chirho {
             result_chirho = GBF_XREF_REGEX_CHIRHO
                 .replace_all(&result_chirho, |caps_chirho: &regex::Captures| {
+                    let xref_chirho = &caps_chirho[1];
                     format!(
-                        r#"<span class="xref"><a href="bible://{0}">{0}</a></span>"#,
-                        &caps_chirho[1]
+                        r#"<span class="xref"><a href="bible://{}">{}</a></span>"#,
+                        escape_html_attr_chirho(xref_chirho),
+                        escape_html_chirho(xref_chirho)
                     )
                 })
                 .to_string();

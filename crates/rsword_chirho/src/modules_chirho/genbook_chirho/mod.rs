@@ -4,6 +4,10 @@
 
 //! General book module implementations.
 //!
-//! Provides RawGenBook module driver.
+//! Provides RawGenBook and ZGenBook module drivers for tree-structured content.
 
-// TODO: Implement RawGenBookChirho
+mod raw_genbook_chirho;
+mod z_genbook_chirho;
+
+pub use raw_genbook_chirho::{RawGenBookChirho, RawGenBookIteratorChirho, GenBookEntryChirho};
+pub use z_genbook_chirho::{ZGenBookChirho, ZGenBookIteratorChirho};

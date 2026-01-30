@@ -34,6 +34,9 @@ serde.workspace = true
 log.workspace = true
 walkdir.workspace = true
 memmap2.workspace = true
+tar.workspace = true
+zip.workspace = true
+ureq.workspace = true
 reqwest = { workspace = true, optional = true }
 rayon = { workspace = true, optional = true }
 

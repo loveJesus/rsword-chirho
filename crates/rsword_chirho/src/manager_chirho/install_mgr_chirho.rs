@@ -4,7 +4,12 @@
 
 //! SWORD module installation manager.
 
+use std::fs::File;
+use std::io::{BufReader, Read};
 use std::path::{Path, PathBuf};
+
+use flate2::read::GzDecoder;
+use tar::Archive;
 
 use crate::config_chirho::{InstallSourceChirho, InstallSourcesConfigChirho};
 use crate::error_chirho::{ErrorChirho, ResultChirho};
@@ -111,19 +116,11 @@ impl InstallMgrChirho {
 
         transport_chirho.download_chirho(&url_chirho, &mods_d_tar_chirho)?;
 
-        // Extract the tarball to get module configs
+        // Extract the tarball to get module configs using native Rust
         let cache_dir_chirho = self.config_dir_chirho.join("remote_mods.d").join(source_name_chirho);
         std::fs::create_dir_all(&cache_dir_chirho)?;
 
-        // Use tar command to extract
-        let status_chirho = std::process::Command::new("tar")
-            .args(["-xzf", &mods_d_tar_chirho.to_string_lossy(), "-C", &cache_dir_chirho.to_string_lossy()])
-            .status()
-            .map_err(|e_chirho| ErrorChirho::generic_chirho(format!("Failed to extract: {}", e_chirho)))?;
-
-        if !status_chirho.success() {
-            return Err(ErrorChirho::generic_chirho("Failed to extract module list"));
-        }
+        extract_tar_gz_chirho(&mods_d_tar_chirho, &cache_dir_chirho)?;
 
         // Clean up tarball
         let _ = std::fs::remove_file(&mods_d_tar_chirho);
@@ -190,17 +187,12 @@ impl InstallMgrChirho {
         eprintln!("Downloading from {}...", zip_url_chirho);
         transport_chirho.download_chirho(&zip_url_chirho, &temp_zip_chirho)?;
 
-        // Extract the zip file
+        // Extract the zip file using native Rust
         eprintln!("Extracting...");
-        let status_chirho = std::process::Command::new("unzip")
-            .args(["-o", "-q", &temp_zip_chirho.to_string_lossy(), "-d", &self.install_path_chirho.to_string_lossy()])
-            .status()
-            .map_err(|e_chirho| ErrorChirho::generic_chirho(format!("Failed to extract: {}", e_chirho)))?;
-
-        if !status_chirho.success() {
-            // Clean up temp file
+        if let Err(e_chirho) = extract_zip_chirho(&temp_zip_chirho, &self.install_path_chirho) {
+            // Clean up temp file on error
             let _ = std::fs::remove_file(&temp_zip_chirho);
-            return Err(ErrorChirho::generic_chirho("Failed to extract module zip"));
+            return Err(e_chirho);
         }
 
         // Clean up temp zip
@@ -456,6 +448,66 @@ fn compare_versions_chirho(v1_chirho: &str, v2_chirho: &str) -> i32 {
     }
 
     0
+}
+
+/// Extract a .tar.gz archive to a destination directory.
+fn extract_tar_gz_chirho(archive_path_chirho: &Path, dest_dir_chirho: &Path) -> ResultChirho<()> {
+    let file_chirho = File::open(archive_path_chirho)?;
+    let buf_reader_chirho = BufReader::new(file_chirho);
+    let gz_decoder_chirho = GzDecoder::new(buf_reader_chirho);
+    let mut archive_chirho = Archive::new(gz_decoder_chirho);
+
+    archive_chirho.unpack(dest_dir_chirho)
+        .map_err(|e_chirho| ErrorChirho::generic_chirho(format!("Failed to extract tar.gz: {}", e_chirho)))?;
+
+    Ok(())
+}
+
+/// Extract a .zip archive to a destination directory.
+fn extract_zip_chirho(archive_path_chirho: &Path, dest_dir_chirho: &Path) -> ResultChirho<()> {
+    use std::io::Write;
+
+    let file_chirho = File::open(archive_path_chirho)?;
+    let buf_reader_chirho = BufReader::new(file_chirho);
+    let mut archive_chirho = zip::ZipArchive::new(buf_reader_chirho)
+        .map_err(|e_chirho| ErrorChirho::generic_chirho(format!("Failed to open zip: {}", e_chirho)))?;
+
+    for i_chirho in 0..archive_chirho.len() {
+        let mut file_chirho = archive_chirho.by_index(i_chirho)
+            .map_err(|e_chirho| ErrorChirho::generic_chirho(format!("Failed to read zip entry: {}", e_chirho)))?;
+
+        let outpath_chirho = match file_chirho.enclosed_name() {
+            Some(path_chirho) => dest_dir_chirho.join(path_chirho),
+            None => continue, // Skip entries with invalid paths
+        };
+
+        if file_chirho.is_dir() {
+            std::fs::create_dir_all(&outpath_chirho)?;
+        } else {
+            // Create parent directories if needed
+            if let Some(parent_chirho) = outpath_chirho.parent() {
+                if !parent_chirho.exists() {
+                    std::fs::create_dir_all(parent_chirho)?;
+                }
+            }
+
+            let mut outfile_chirho = File::create(&outpath_chirho)?;
+            let mut buffer_chirho = Vec::new();
+            file_chirho.read_to_end(&mut buffer_chirho)?;
+            outfile_chirho.write_all(&buffer_chirho)?;
+        }
+
+        // Set permissions on Unix
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            if let Some(mode_chirho) = file_chirho.unix_mode() {
+                std::fs::set_permissions(&outpath_chirho, std::fs::Permissions::from_mode(mode_chirho))?;
+            }
+        }
+    }
+
+    Ok(())
 }
 
 #[cfg(test)]

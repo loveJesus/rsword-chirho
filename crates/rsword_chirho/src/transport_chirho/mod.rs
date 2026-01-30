@@ -135,84 +135,76 @@ impl TransportChirho for HttpTransportChirho {
     }
 }
 
-/// Simple URL-based file downloader using the system curl/wget if available.
-pub struct SystemTransportChirho;
+/// Lightweight HTTP transport using ureq (no async runtime needed).
+///
+/// This provides a pure Rust HTTP client without requiring external tools
+/// like curl or wget. It's simpler and more portable than reqwest.
+pub struct UreqTransportChirho {
+    agent_chirho: ureq::Agent,
+}
 
-impl SystemTransportChirho {
-    /// Create a new system transport.
+impl UreqTransportChirho {
+    /// Create a new ureq transport.
     pub fn new_chirho() -> Self {
-        Self
+        let agent_chirho = ureq::Agent::new_with_defaults();
+        Self { agent_chirho }
     }
 }
 
-impl TransportChirho for SystemTransportChirho {
+impl TransportChirho for UreqTransportChirho {
     fn download_chirho(&self, url_chirho: &str, dest_chirho: &Path) -> ResultChirho<()> {
         // Create parent directories
         if let Some(parent_chirho) = dest_chirho.parent() {
             std::fs::create_dir_all(parent_chirho)?;
         }
 
-        // Try curl first, then wget
-        let dest_str_chirho = dest_chirho.to_string_lossy();
+        let response_chirho = self.agent_chirho.get(url_chirho)
+            .call()
+            .map_err(|e_chirho| ErrorChirho::network_chirho(format!("HTTP request failed: {}", e_chirho)))?;
 
-        let status_chirho = std::process::Command::new("curl")
-            .args(["-fsSL", "-o", &dest_str_chirho, url_chirho])
-            .status();
-
-        if let Ok(status_chirho) = status_chirho {
-            if status_chirho.success() {
-                return Ok(());
-            }
+        let status_chirho = response_chirho.status().as_u16();
+        if status_chirho < 200 || status_chirho >= 300 {
+            return Err(ErrorChirho::network_chirho(format!("HTTP error: {}", status_chirho)));
         }
 
-        // Try wget
-        let status_chirho = std::process::Command::new("wget")
-            .args(["-q", "-O", &dest_str_chirho, url_chirho])
-            .status();
+        let bytes_chirho = response_chirho.into_body()
+            .read_to_vec()
+            .map_err(|e_chirho| ErrorChirho::network_chirho(format!("Failed to read response: {}", e_chirho)))?;
 
-        if let Ok(status_chirho) = status_chirho {
-            if status_chirho.success() {
-                return Ok(());
-            }
-        }
-
-        Err(ErrorChirho::network_chirho("Neither curl nor wget available for download"))
+        std::fs::write(dest_chirho, &bytes_chirho)?;
+        Ok(())
     }
 
     fn fetch_chirho(&self, url_chirho: &str) -> ResultChirho<Vec<u8>> {
-        // Try curl first
-        let output_chirho = std::process::Command::new("curl")
-            .args(["-fsSL", url_chirho])
-            .output();
+        let response_chirho = self.agent_chirho.get(url_chirho)
+            .call()
+            .map_err(|e_chirho| ErrorChirho::network_chirho(format!("HTTP request failed: {}", e_chirho)))?;
 
-        if let Ok(output_chirho) = output_chirho {
-            if output_chirho.status.success() {
-                return Ok(output_chirho.stdout);
-            }
+        let status_chirho = response_chirho.status().as_u16();
+        if status_chirho < 200 || status_chirho >= 300 {
+            return Err(ErrorChirho::network_chirho(format!("HTTP error: {}", status_chirho)));
         }
 
-        // Try wget
-        let output_chirho = std::process::Command::new("wget")
-            .args(["-q", "-O", "-", url_chirho])
-            .output();
+        let bytes_chirho = response_chirho.into_body()
+            .read_to_vec()
+            .map_err(|e_chirho| ErrorChirho::network_chirho(format!("Failed to read response: {}", e_chirho)))?;
 
-        if let Ok(output_chirho) = output_chirho {
-            if output_chirho.status.success() {
-                return Ok(output_chirho.stdout);
-            }
-        }
-
-        Err(ErrorChirho::network_chirho("Neither curl nor wget available for fetch"))
+        Ok(bytes_chirho)
     }
 
     fn is_accessible_chirho(&self, url_chirho: &str) -> bool {
-        std::process::Command::new("curl")
-            .args(["-fsSI", url_chirho])
-            .status()
-            .map(|s_chirho| s_chirho.success())
+        self.agent_chirho.head(url_chirho)
+            .call()
+            .map(|r_chirho| {
+                let status_chirho = r_chirho.status().as_u16();
+                status_chirho >= 200 && status_chirho < 300
+            })
             .unwrap_or(false)
     }
 }
+
+/// Type alias for backwards compatibility.
+pub type SystemTransportChirho = UreqTransportChirho;
 
 #[cfg(test)]
 mod tests_chirho {

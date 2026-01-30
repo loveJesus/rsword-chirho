@@ -73,11 +73,13 @@
 
 pub mod canons_chirho;
 pub mod manager_chirho;
+pub mod mapping_chirho;
 
 use std::collections::HashMap;
 use std::sync::LazyLock;
 
 pub use manager_chirho::VersificationManagerChirho;
+pub use mapping_chirho::{VerseMappingChirho, VerseMappingResultChirho, global_mapper_chirho};
 
 /// Book information.
 #[derive(Debug, Clone)]

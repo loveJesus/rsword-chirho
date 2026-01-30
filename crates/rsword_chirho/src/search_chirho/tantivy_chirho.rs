@@ -10,9 +10,9 @@ use std::path::{Path, PathBuf};
 use std::fs;
 
 use tantivy::collector::TopDocs;
-use tantivy::query::{QueryParser, RegexQuery};
+use tantivy::query::{FuzzyTermQuery, PhraseQuery, QueryParser, RegexQuery};
 use tantivy::schema::{Schema, STORED, TEXT, Field, Value};
-use tantivy::{Index, IndexWriter, TantivyDocument};
+use tantivy::{Index, IndexWriter, TantivyDocument, Term};
 
 use crate::error_chirho::{ErrorChirho, ResultChirho};
 use crate::keys_chirho::{ListKeyChirho, StrKeyChirho};
@@ -171,6 +171,105 @@ impl TantivySearchChirho {
         Ok(results_chirho)
     }
 
+    /// Search with phrase and slop (proximity).
+    fn search_phrase_slop_chirho(
+        &self,
+        phrase_chirho: &str,
+        slop_chirho: u32,
+        max_results_chirho: usize,
+    ) -> ResultChirho<ListKeyChirho> {
+        let index_chirho = self.index_chirho.as_ref()
+            .ok_or_else(|| ErrorChirho::ModuleNotFoundChirho {
+                module_name_chirho: "Search index not open".to_string(),
+            })?;
+
+        let reader_chirho = index_chirho.reader()
+            .map_err(|e_chirho| ErrorChirho::IoChirho(std::io::Error::other(
+                format!("Failed to create reader: {}", e_chirho)
+            )))?;
+
+        let searcher_chirho = reader_chirho.searcher();
+
+        // Build phrase query with slop
+        let terms_chirho: Vec<Term> = phrase_chirho
+            .split_whitespace()
+            .map(|w_chirho| Term::from_field_text(self.text_field_chirho, &w_chirho.to_lowercase()))
+            .collect();
+
+        let mut phrase_query_chirho = PhraseQuery::new(terms_chirho);
+        phrase_query_chirho.set_slop(slop_chirho);
+
+        let top_docs_chirho = searcher_chirho.search(&phrase_query_chirho, &TopDocs::with_limit(max_results_chirho))
+            .map_err(|e_chirho| ErrorChirho::IoChirho(std::io::Error::other(
+                format!("Search failed: {}", e_chirho)
+            )))?;
+
+        let mut results_chirho = ListKeyChirho::new_chirho();
+
+        for (_score_chirho, doc_address_chirho) in top_docs_chirho {
+            let doc_chirho: TantivyDocument = searcher_chirho.doc(doc_address_chirho)
+                .map_err(|e_chirho| ErrorChirho::IoChirho(std::io::Error::other(
+                    format!("Failed to retrieve doc: {}", e_chirho)
+                )))?;
+
+            if let Some(key_value_chirho) = doc_chirho.get_first(self.key_field_chirho) {
+                if let Some(key_text_chirho) = key_value_chirho.as_str() {
+                    let key_chirho = Box::new(StrKeyChirho::with_text_chirho(key_text_chirho));
+                    results_chirho.add_chirho(key_chirho);
+                }
+            }
+        }
+
+        Ok(results_chirho)
+    }
+
+    /// Search with fuzzy matching.
+    fn search_fuzzy_chirho(
+        &self,
+        term_chirho: &str,
+        distance_chirho: u8,
+        max_results_chirho: usize,
+    ) -> ResultChirho<ListKeyChirho> {
+        let index_chirho = self.index_chirho.as_ref()
+            .ok_or_else(|| ErrorChirho::ModuleNotFoundChirho {
+                module_name_chirho: "Search index not open".to_string(),
+            })?;
+
+        let reader_chirho = index_chirho.reader()
+            .map_err(|e_chirho| ErrorChirho::IoChirho(std::io::Error::other(
+                format!("Failed to create reader: {}", e_chirho)
+            )))?;
+
+        let searcher_chirho = reader_chirho.searcher();
+
+        // Build fuzzy term query
+        let term_value_chirho = Term::from_field_text(self.text_field_chirho, &term_chirho.to_lowercase());
+        let fuzzy_query_chirho = FuzzyTermQuery::new(term_value_chirho, distance_chirho, true);
+
+        let top_docs_chirho = searcher_chirho.search(&fuzzy_query_chirho, &TopDocs::with_limit(max_results_chirho))
+            .map_err(|e_chirho| ErrorChirho::IoChirho(std::io::Error::other(
+                format!("Search failed: {}", e_chirho)
+            )))?;
+
+        let mut results_chirho = ListKeyChirho::new_chirho();
+
+        for (_score_chirho, doc_address_chirho) in top_docs_chirho {
+            let doc_chirho: TantivyDocument = searcher_chirho.doc(doc_address_chirho)
+                .map_err(|e_chirho| ErrorChirho::IoChirho(std::io::Error::other(
+                    format!("Failed to retrieve doc: {}", e_chirho)
+                )))?;
+
+            if let Some(key_value_chirho) = doc_chirho.get_first(self.key_field_chirho) {
+                if let Some(key_text_chirho) = key_value_chirho.as_str() {
+                    let key_chirho = Box::new(StrKeyChirho::with_text_chirho(key_text_chirho));
+                    results_chirho.add_chirho(key_chirho);
+                }
+            }
+        }
+
+        Ok(results_chirho)
+    }
+
     /// Search with a regex pattern.
     fn search_regex_chirho(
         &self,
@@ -239,11 +338,21 @@ impl SearchEngineChirho for TantivySearchChirho {
                 let query_chirho = format!("\"{}\"", pattern_chirho);
                 self.search_query_chirho(&query_chirho, max_results_chirho)
             }
+            SearchTypeChirho::ProximityChirho => {
+                // Phrase search with slop
+                let slop_chirho = options_chirho.slop_chirho.unwrap_or(2);
+                self.search_phrase_slop_chirho(pattern_chirho, slop_chirho, max_results_chirho)
+            }
             SearchTypeChirho::MultiWordChirho => {
                 // AND all words together
                 let words_chirho: Vec<&str> = pattern_chirho.split_whitespace().collect();
                 let query_chirho = words_chirho.join(" AND ");
                 self.search_query_chirho(&query_chirho, max_results_chirho)
+            }
+            SearchTypeChirho::FuzzyChirho => {
+                // Fuzzy term search
+                let distance_chirho = options_chirho.fuzzy_distance_chirho.unwrap_or(1);
+                self.search_fuzzy_chirho(pattern_chirho, distance_chirho, max_results_chirho)
             }
             SearchTypeChirho::ExternalChirho | SearchTypeChirho::EntryAttrChirho => {
                 // Default to phrase search

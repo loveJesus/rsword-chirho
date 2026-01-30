@@ -193,6 +193,11 @@ impl SearchEngineChirho for RegexSearchChirho {
             SearchTypeChirho::MultiWordChirho => {
                 self.search_multiword_chirho(pattern_chirho, case_insensitive_chirho, max_results_chirho)
             }
+            SearchTypeChirho::ProximityChirho | SearchTypeChirho::FuzzyChirho => {
+                // Regex search doesn't support proximity/fuzzy natively,
+                // fall back to phrase search
+                self.search_phrase_chirho(pattern_chirho, case_insensitive_chirho, max_results_chirho)
+            }
             SearchTypeChirho::ExternalChirho | SearchTypeChirho::EntryAttrChirho => {
                 // Default to phrase search
                 self.search_phrase_chirho(pattern_chirho, case_insensitive_chirho, max_results_chirho)

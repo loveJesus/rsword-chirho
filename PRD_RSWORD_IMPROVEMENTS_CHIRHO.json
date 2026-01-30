@@ -110,7 +110,7 @@
       "id_chirho": "RSWORD-005",
       "title_chirho": "Parallel Module Loading",
       "priority_chirho": "P2_chirho",
-      "status_chirho": "planned",
+      "status_chirho": "complete",
       "description_chirho": "Use rayon for parallel loading when scanning and initializing multiple modules",
       "requirements_chirho": [
         "Parallel config file scanning in SwMgrChirho",
@@ -132,7 +132,7 @@
       "id_chirho": "RSWORD-006",
       "title_chirho": "Enhanced Search with Tantivy",
       "priority_chirho": "P2_chirho",
-      "status_chirho": "planned",
+      "status_chirho": "complete",
       "description_chirho": "Improve search functionality with advanced Tantivy features",
       "requirements_chirho": [
         "Phrase searching with slop parameter",
@@ -203,7 +203,7 @@
       "id_chirho": "RSWORD-009",
       "title_chirho": "Cross-Versification Mapping",
       "priority_chirho": "P2_chirho",
-      "status_chirho": "planned",
+      "status_chirho": "complete",
       "description_chirho": "Map verses between different versification systems",
       "requirements_chirho": [
         "Verse mapping tables between versification systems",

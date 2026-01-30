@@ -92,6 +92,7 @@ mod regex_chirho;
 mod query_parser_chirho;
 mod query_builder_chirho;
 mod parallel_chirho;
+pub mod highlighter_chirho;
 
 pub use tantivy_chirho::TantivySearchChirho;
 pub use regex_chirho::{RegexSearchChirho, SearchEntryChirho};
@@ -104,6 +105,9 @@ pub use query_builder_chirho::{
 pub use parallel_chirho::{
     ParallelSearchChirho, ParallelSearchConfigChirho, TestamentPartitionChirho,
     MultiModuleResultChirho, search_multi_module_parallel_chirho,
+};
+pub use highlighter_chirho::{
+    HighlighterChirho, HighlightStyleChirho, HighlightOptionsChirho, HighlightedResultChirho,
 };
 
 use crate::error_chirho::ResultChirho;
@@ -118,8 +122,12 @@ pub enum SearchTypeChirho {
     /// Phrase search (literal text).
     #[default]
     PhraseChirho,
+    /// Phrase search with proximity (slop).
+    ProximityChirho,
     /// Multi-word search (all words must be present).
     MultiWordChirho,
+    /// Fuzzy search (tolerates typos).
+    FuzzyChirho,
     /// Entry attribute search.
     EntryAttrChirho,
     /// External search (tantivy indexed).
@@ -138,6 +146,16 @@ pub struct SearchOptionsChirho {
     pub scope_chirho: Option<String>,
     /// Maximum results.
     pub max_results_chirho: Option<usize>,
+    /// Phrase slop (words allowed between phrase terms for proximity search).
+    pub slop_chirho: Option<u32>,
+    /// Fuzzy distance (edit distance for fuzzy matching, 0-2).
+    pub fuzzy_distance_chirho: Option<u8>,
+    /// Include scores in results.
+    pub include_scores_chirho: bool,
+    /// Minimum score threshold.
+    pub min_score_chirho: Option<f32>,
+    /// Highlight matched terms.
+    pub highlight_chirho: bool,
 }
 
 impl SearchOptionsChirho {
@@ -167,6 +185,44 @@ impl SearchOptionsChirho {
     /// Set maximum results.
     pub fn with_max_results_chirho(mut self, max_chirho: usize) -> Self {
         self.max_results_chirho = Some(max_chirho);
+        self
+    }
+
+    /// Set phrase slop (proximity).
+    ///
+    /// Slop defines how many intervening words are allowed between
+    /// phrase terms. For example, slop=2 allows "God so loved" to match
+    /// "God loved" or "God really loved".
+    pub fn with_slop_chirho(mut self, slop_chirho: u32) -> Self {
+        self.slop_chirho = Some(slop_chirho);
+        self
+    }
+
+    /// Set fuzzy distance.
+    ///
+    /// Distance defines how many character edits (insertions, deletions,
+    /// substitutions) are allowed. Valid values are 0-2.
+    /// For example, distance=1 allows "love" to match "dove" or "lov".
+    pub fn with_fuzzy_chirho(mut self, distance_chirho: u8) -> Self {
+        self.fuzzy_distance_chirho = Some(distance_chirho.min(2));
+        self
+    }
+
+    /// Include relevance scores in results.
+    pub fn with_scores_chirho(mut self) -> Self {
+        self.include_scores_chirho = true;
+        self
+    }
+
+    /// Set minimum score threshold.
+    pub fn with_min_score_chirho(mut self, score_chirho: f32) -> Self {
+        self.min_score_chirho = Some(score_chirho);
+        self
+    }
+
+    /// Enable highlighting of matched terms.
+    pub fn with_highlight_chirho(mut self) -> Self {
+        self.highlight_chirho = true;
         self
     }
 }

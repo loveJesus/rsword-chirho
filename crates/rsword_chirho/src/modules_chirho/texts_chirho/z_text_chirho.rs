@@ -92,13 +92,13 @@ impl ZTextChirho {
     /// Read the text at the current position.
     fn read_current_chirho(&mut self) -> ResultChirho<String> {
         let testament_chirho = self.key_chirho.get_testament_chirho();
-        let index_chirho = self.calculate_verse_index_chirho();
+        let index_chirho = self.calculate_verse_index_chirho()?;
 
         self.storage_chirho.read_verse_chirho(testament_chirho, index_chirho)
     }
 
     /// Calculate the verse index for the current key position.
-    fn calculate_verse_index_chirho(&self) -> u32 {
+    fn calculate_verse_index_chirho(&self) -> ResultChirho<u32> {
         let testament_enum_chirho = if self.key_chirho.get_testament_chirho() == 1 {
             TestamentChirho::OldChirho
         } else {
@@ -112,7 +112,9 @@ impl ZTextChirho {
                 self.key_chirho.get_chapter_chirho() as u8,
                 self.key_chirho.get_verse_chirho() as u8,
             )
-            .unwrap_or(0)
+            .ok_or_else(|| ErrorChirho::verse_out_of_bounds_chirho(
+                self.key_chirho.get_text_chirho(),
+            ))
     }
 
     /// Get the versification system.

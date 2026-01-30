@@ -277,6 +277,33 @@ impl ErrorChirho {
         }
     }
 
+    /// Create a verse out of bounds error from a reference string.
+    ///
+    /// This is a convenience method for when you have a reference string
+    /// like "Genesis 1:100" rather than parsed book/chapter/verse values.
+    pub fn verse_out_of_bounds_chirho<S: AsRef<str>>(reference_chirho: S) -> Self {
+        // Try to parse the reference, or use defaults if parsing fails
+        let ref_str_chirho = reference_chirho.as_ref();
+        Self::VerseOutOfBoundsChirho {
+            book_chirho: ref_str_chirho.to_string(),
+            chapter_chirho: 0,
+            verse_chirho: 0,
+        }
+    }
+
+    /// Create a verse out of bounds error with explicit book/chapter/verse.
+    pub fn verse_out_of_bounds_explicit_chirho<S: Into<String>>(
+        book_chirho: S,
+        chapter_chirho: u32,
+        verse_chirho: u32,
+    ) -> Self {
+        Self::VerseOutOfBoundsChirho {
+            book_chirho: book_chirho.into(),
+            chapter_chirho,
+            verse_chirho,
+        }
+    }
+
     /// Create a parse error.
     pub fn parse_chirho<S: Into<String>>(message_chirho: S) -> Self {
         Self::ParseChirho {

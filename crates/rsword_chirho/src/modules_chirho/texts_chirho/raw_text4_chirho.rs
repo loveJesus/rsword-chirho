@@ -71,13 +71,13 @@ impl RawText4Chirho {
     /// Read the text at the current position.
     fn read_current_chirho(&mut self) -> ResultChirho<String> {
         let testament_chirho = self.key_chirho.get_testament_chirho();
-        let index_chirho = self.calculate_verse_index_chirho();
+        let index_chirho = self.calculate_verse_index_chirho()?;
 
         self.storage_chirho.read_verse_chirho(testament_chirho, index_chirho)
     }
 
     /// Calculate the verse index for the current key position.
-    fn calculate_verse_index_chirho(&self) -> u32 {
+    fn calculate_verse_index_chirho(&self) -> ResultChirho<u32> {
         let testament_enum_chirho = if self.key_chirho.get_testament_chirho() == 1 {
             TestamentChirho::OldChirho
         } else {
@@ -91,7 +91,9 @@ impl RawText4Chirho {
                 self.key_chirho.get_chapter_chirho() as u8,
                 self.key_chirho.get_verse_chirho() as u8,
             )
-            .unwrap_or(0)
+            .ok_or_else(|| ErrorChirho::verse_out_of_bounds_chirho(
+                self.key_chirho.get_text_chirho(),
+            ))
     }
 
     /// Get the versification system.
@@ -117,7 +119,7 @@ impl RawText4Chirho {
     /// * `text_chirho` - The text content to write
     pub fn write_verse_chirho(&mut self, text_chirho: &str) -> ResultChirho<()> {
         let testament_chirho = self.key_chirho.get_testament_chirho();
-        let index_chirho = self.calculate_verse_index_chirho();
+        let index_chirho = self.calculate_verse_index_chirho()?;
         self.storage_chirho.write_verse_chirho(testament_chirho, index_chirho, text_chirho)
     }
 
@@ -139,7 +141,7 @@ impl RawText4Chirho {
     /// * `source_reference_chirho` - The verse reference to link to
     pub fn link_verse_chirho(&mut self, source_reference_chirho: &str) -> ResultChirho<()> {
         let dest_testament_chirho = self.key_chirho.get_testament_chirho();
-        let dest_index_chirho = self.calculate_verse_index_chirho();
+        let dest_index_chirho = self.calculate_verse_index_chirho()?;
 
         // Parse the source reference
         let mut source_key_chirho = VerseKeyChirho::with_versification_chirho(self.v11n_chirho.clone());
@@ -165,7 +167,7 @@ impl RawText4Chirho {
                 source_key_chirho.get_chapter_chirho() as u8,
                 source_key_chirho.get_verse_chirho() as u8,
             )
-            .unwrap_or(0);
+            .ok_or_else(|| ErrorChirho::verse_out_of_bounds_chirho(source_reference_chirho))?;
 
         self.storage_chirho.link_verse_chirho(
             dest_testament_chirho,

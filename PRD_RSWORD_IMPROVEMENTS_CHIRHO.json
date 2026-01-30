@@ -225,7 +225,7 @@
       "id_chirho": "RSWORD-010",
       "title_chirho": "Module Validation Tool",
       "priority_chirho": "P3_chirho",
-      "status_chirho": "planned",
+      "status_chirho": "complete",
       "description_chirho": "CLI tool to validate SWORD modules for correctness",
       "requirements_chirho": [
         "Verify module index files are valid",

@@ -315,6 +315,46 @@ pub fn synodal_chirho() -> &'static VersificationChirho {
     &SYNODAL_CHIRHO
 }
 
+/// Get the Luther versification system.
+pub fn luther_chirho() -> &'static VersificationChirho {
+    static LUTHER_CHIRHO: LazyLock<VersificationChirho> = LazyLock::new(|| {
+        canons_chirho::luther_chirho::create_luther_chirho()
+    });
+    &LUTHER_CHIRHO
+}
+
+/// Get the Vulgate versification system.
+pub fn vulgate_chirho() -> &'static VersificationChirho {
+    static VULGATE_CHIRHO: LazyLock<VersificationChirho> = LazyLock::new(|| {
+        canons_chirho::vulgate_chirho::create_vulgate_chirho()
+    });
+    &VULGATE_CHIRHO
+}
+
+/// Get the NRSV versification system.
+pub fn nrsv_chirho() -> &'static VersificationChirho {
+    static NRSV_CHIRHO: LazyLock<VersificationChirho> = LazyLock::new(|| {
+        canons_chirho::nrsv_chirho::create_nrsv_chirho()
+    });
+    &NRSV_CHIRHO
+}
+
+/// Get the Leningrad (Hebrew/MT) versification system.
+pub fn leningrad_chirho() -> &'static VersificationChirho {
+    static LENINGRAD_CHIRHO: LazyLock<VersificationChirho> = LazyLock::new(|| {
+        canons_chirho::leningrad_chirho::create_leningrad_chirho()
+    });
+    &LENINGRAD_CHIRHO
+}
+
+/// Get the Ethiopian Orthodox versification system.
+pub fn ethiopian_chirho() -> &'static VersificationChirho {
+    static ETHIOPIAN_CHIRHO: LazyLock<VersificationChirho> = LazyLock::new(|| {
+        canons_chirho::ethiopian_chirho::create_ethiopian_chirho()
+    });
+    &ETHIOPIAN_CHIRHO
+}
+
 /// Get a versification system by name.
 pub fn get_versification_chirho(name_chirho: &str) -> Option<&'static VersificationChirho> {
     match name_chirho.to_lowercase().as_str() {
@@ -322,6 +362,11 @@ pub fn get_versification_chirho(name_chirho: &str) -> Option<&'static Versificat
         "catholic" => Some(catholic_chirho()),
         "lxx" | "septuagint" => Some(lxx_chirho()),
         "synodal" | "synodalprot" => Some(synodal_chirho()),
+        "luther" | "german" => Some(luther_chirho()),
+        "vulgate" | "vulg" => Some(vulgate_chirho()),
+        "nrsv" => Some(nrsv_chirho()),
+        "leningrad" | "mt" | "hebrew" => Some(leningrad_chirho()),
+        "ethiopian" | "ethiopic" => Some(ethiopian_chirho()),
         _ => None,
     }
 }

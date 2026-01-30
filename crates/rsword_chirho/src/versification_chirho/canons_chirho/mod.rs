@@ -10,3 +10,6 @@ pub mod lxx_chirho;
 pub mod synodal_chirho;
 pub mod luther_chirho;
 pub mod vulgate_chirho;
+pub mod nrsv_chirho;
+pub mod leningrad_chirho;
+pub mod ethiopian_chirho;

@@ -14,7 +14,7 @@
       "id_chirho": "RSWORD-001",
       "title_chirho": "OSIS Parser Implementation",
       "priority_chirho": "P1_chirho",
-      "status_chirho": "planned",
+      "status_chirho": "complete",
       "description_chirho": "Implement a complete OSIS (Open Scripture Information Standard) XML parser for importing Bible modules",
       "requirements_chirho": [
         "Parse OSIS XML documents into internal verse structure",
@@ -37,7 +37,7 @@
       "id_chirho": "RSWORD-002",
       "title_chirho": "TEI Parser Implementation",
       "priority_chirho": "P1_chirho",
-      "status_chirho": "planned",
+      "status_chirho": "complete",
       "description_chirho": "Implement TEI (Text Encoding Initiative) XML parser for importing lexicon/dictionary modules",
       "requirements_chirho": [
         "Parse TEI P5 dictionary format",
@@ -83,14 +83,14 @@
       "id_chirho": "RSWORD-004",
       "title_chirho": "Additional Versification Systems",
       "priority_chirho": "P2_chirho",
-      "status_chirho": "planned",
+      "status_chirho": "complete",
       "description_chirho": "Add support for more versification systems used by various Bible translations",
       "requirements_chirho": [
-        "Vulgate versification system",
-        "Ethiopian versification system",
-        "German (Luther) versification system",
-        "NRSV versification system",
-        "Leningrad versification system"
+        "Vulgate versification system [COMPLETE]",
+        "Ethiopian versification system [COMPLETE]",
+        "German (Luther) versification system [COMPLETE]",
+        "NRSV versification system [COMPLETE]",
+        "Leningrad versification system [COMPLETE]"
       ],
       "acceptance_criteria_chirho": [
         "Each versification correctly maps all books and verses",

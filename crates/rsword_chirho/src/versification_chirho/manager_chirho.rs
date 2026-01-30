@@ -8,7 +8,10 @@ use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
 
 use crate::error_chirho::{ErrorChirho, ResultChirho};
-use crate::versification_chirho::{kjv_chirho, VersificationChirho};
+use crate::versification_chirho::{
+    catholic_chirho, ethiopian_chirho, kjv_chirho, leningrad_chirho, luther_chirho, lxx_chirho,
+    nrsv_chirho, synodal_chirho, vulgate_chirho, VersificationChirho,
+};
 
 /// Manager for versification systems.
 ///
@@ -58,14 +61,16 @@ impl VersificationManagerChirho {
 
     /// Create a versification system by name.
     fn create_versification_chirho(&self, name_chirho: &str) -> ResultChirho<VersificationChirho> {
-        match name_chirho {
+        match name_chirho.to_uppercase().as_str() {
             "KJV" => Ok(kjv_chirho().clone()),
-            // Add more versification systems here as needed:
-            // "Catholic" => Ok(create_catholic_chirho()),
-            // "LXX" => Ok(create_lxx_chirho()),
-            // "MT" => Ok(create_mt_chirho()),
-            // "NRSV" => Ok(create_nrsv_chirho()),
-            // "Vulg" => Ok(create_vulg_chirho()),
+            "CATHOLIC" => Ok(catholic_chirho().clone()),
+            "LXX" | "SEPTUAGINT" => Ok(lxx_chirho().clone()),
+            "SYNODAL" | "SYNODALPROT" => Ok(synodal_chirho().clone()),
+            "LUTHER" | "GERMAN" => Ok(luther_chirho().clone()),
+            "VULGATE" | "VULG" => Ok(vulgate_chirho().clone()),
+            "NRSV" => Ok(nrsv_chirho().clone()),
+            "LENINGRAD" | "MT" | "HEBREW" => Ok(leningrad_chirho().clone()),
+            "ETHIOPIAN" | "ETHIOPIC" => Ok(ethiopian_chirho().clone()),
             _ => Err(ErrorChirho::InvalidVersificationChirho {
                 v11n_chirho: name_chirho.to_string(),
             }),
@@ -76,13 +81,25 @@ impl VersificationManagerChirho {
     pub fn list_available_chirho(&self) -> Vec<&'static str> {
         vec![
             "KJV",
-            // Future: "Catholic", "LXX", "MT", "NRSV", "Vulg", etc.
+            "Catholic",
+            "LXX",
+            "Synodal",
+            "Luther",
+            "Vulgate",
+            "NRSV",
+            "Leningrad",
+            "Ethiopian",
         ]
     }
 
     /// Check if a versification system is available.
     pub fn is_available_chirho(&self, name_chirho: &str) -> bool {
-        matches!(name_chirho, "KJV")
+        matches!(
+            name_chirho.to_uppercase().as_str(),
+            "KJV" | "CATHOLIC" | "LXX" | "SEPTUAGINT" | "SYNODAL" | "SYNODALPROT" |
+            "LUTHER" | "GERMAN" | "VULGATE" | "VULG" | "NRSV" |
+            "LENINGRAD" | "MT" | "HEBREW" | "ETHIOPIAN" | "ETHIOPIC"
+        )
     }
 }
 

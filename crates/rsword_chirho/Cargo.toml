@@ -17,6 +17,7 @@ categories = ["text-processing"]
 [features]
 default = []
 http-transport = ["reqwest"]
+async-transport = ["reqwest", "tokio", "futures-util", "async-trait"]
 parallel = ["rayon"]
 
 [dependencies]
@@ -38,6 +39,9 @@ tar.workspace = true
 zip.workspace = true
 ureq.workspace = true
 reqwest = { workspace = true, optional = true }
+tokio = { workspace = true, optional = true }
+futures-util = { version = "0.3", optional = true }
+async-trait = { version = "0.1", optional = true }
 rayon = { workspace = true, optional = true }
 
 [dev-dependencies]

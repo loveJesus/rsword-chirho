@@ -6,6 +6,37 @@
 //!
 //! Provides HTTP and FTP transport for downloading SWORD modules
 //! from remote repositories.
+//!
+//! ## Transport Options
+//!
+//! | Transport | Feature | Description |
+//! |-----------|---------|-------------|
+//! | [`UreqTransportChirho`] | default | Lightweight sync HTTP (pure Rust) |
+//! | [`HttpTransportChirho`] | `http-transport` | Blocking HTTP with reqwest |
+//! | [`AsyncTransportChirho`] | `async-transport` | Async HTTP with tokio/reqwest |
+//!
+//! ## Async Transport
+//!
+//! Enable the `async-transport` feature for async downloads with progress:
+//!
+//! ```rust,ignore
+//! use rsword_chirho::transport_chirho::{AsyncTransportChirho, DownloadProgressChirho};
+//!
+//! #[tokio::main]
+//! async fn main() {
+//!     let transport_chirho = AsyncTransportChirho::new_chirho().unwrap();
+//!     transport_chirho.download_chirho("https://example.com/mod.zip", &path).await.unwrap();
+//! }
+//! ```
+
+#[cfg(feature = "async-transport")]
+pub mod async_transport_chirho;
+
+#[cfg(feature = "async-transport")]
+pub use async_transport_chirho::{
+    AsyncTransportChirho, AsyncTransportTraitChirho,
+    DownloadProgressChirho, ProgressCallbackChirho, CancellationTokenChirho,
+};
 
 use std::path::Path;
 

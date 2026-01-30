@@ -60,7 +60,7 @@
       "id_chirho": "RSWORD-003",
       "title_chirho": "Async HTTP Transport Option",
       "priority_chirho": "P2_chirho",
-      "status_chirho": "planned",
+      "status_chirho": "complete",
       "description_chirho": "Add async HTTP transport using tokio + reqwest for better performance during module downloads",
       "requirements_chirho": [
         "Create AsyncTransportChirho trait",

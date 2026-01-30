@@ -26,6 +26,88 @@ use std::path::PathBuf;
 use anyhow::Result;
 use clap::Parser;
 
+// Module type constants
+const MODULE_TYPE_BIBLE_CHIRHO: &str = "Bible";
+const MODULE_TYPE_COMMENTARY_CHIRHO: &str = "Commentary";
+const MODULE_TYPE_LEXICON_CHIRHO: &str = "Lexicon";
+const MODULE_TYPE_GENBOOK_CHIRHO: &str = "GenBook";
+
+// Language constants
+const LANG_EN_CHIRHO: &str = "en";
+const LANG_GRC_CHIRHO: &str = "grc";
+const LANG_HEB_CHIRHO: &str = "heb";
+const LANG_LA_CHIRHO: &str = "la";
+const LANG_DE_CHIRHO: &str = "de";
+const LANG_ES_CHIRHO: &str = "es";
+const LANG_FR_CHIRHO: &str = "fr";
+const LANG_OTHER_CHIRHO: &str = "other";
+
+// Source type constants
+const SOURCE_TYPE_OSIS_CHIRHO: &str = "OSIS";
+const SOURCE_TYPE_THML_CHIRHO: &str = "ThML";
+const SOURCE_TYPE_GBF_CHIRHO: &str = "GBF";
+const SOURCE_TYPE_TEI_CHIRHO: &str = "TEI";
+const SOURCE_TYPE_PLAIN_CHIRHO: &str = "Plain";
+
+// Compression type constants
+const COMPRESS_TYPE_ZIP_CHIRHO: &str = "ZIP";
+const COMPRESS_TYPE_BZIP2_CHIRHO: &str = "BZIP2";
+const COMPRESS_TYPE_XZ_CHIRHO: &str = "XZ";
+
+// Block type constants
+const BLOCK_TYPE_VERSE_CHIRHO: &str = "verse";
+const BLOCK_TYPE_CHAPTER_CHIRHO: &str = "chapter";
+const BLOCK_TYPE_BOOK_CHIRHO: &str = "book";
+
+// Versification constants
+const V11N_KJV_CHIRHO: &str = "KJV";
+const V11N_CATHOLIC_CHIRHO: &str = "Catholic";
+const V11N_LXX_CHIRHO: &str = "LXX";
+const V11N_SYNODAL_CHIRHO: &str = "Synodal";
+const V11N_LUTHER_CHIRHO: &str = "Luther";
+const V11N_VULGATE_CHIRHO: &str = "Vulgate";
+const V11N_NRSV_CHIRHO: &str = "NRSV";
+const V11N_LENINGRAD_CHIRHO: &str = "Leningrad";
+
+// Module driver constants
+const MOD_DRV_RAW_TEXT_CHIRHO: &str = "RawText";
+const MOD_DRV_Z_TEXT_CHIRHO: &str = "zText";
+const MOD_DRV_RAW_COM_CHIRHO: &str = "RawCom";
+const MOD_DRV_Z_COM_CHIRHO: &str = "zCom";
+const MOD_DRV_RAW_LD_CHIRHO: &str = "RawLD";
+const MOD_DRV_Z_LD_CHIRHO: &str = "zLD";
+const MOD_DRV_RAW_GENBOOK_CHIRHO: &str = "RawGenBook";
+
+// Block type config constants
+const BLOCK_CONFIG_VERSE_CHIRHO: &str = "VERSEBLOCKS";
+const BLOCK_CONFIG_CHAPTER_CHIRHO: &str = "CHAPTERBLOCKS";
+const BLOCK_CONFIG_BOOK_CHIRHO: &str = "BOOKBLOCKS";
+
+// Block number constants
+const BLOCK_NUM_VERSE_CHIRHO: &str = "2";
+const BLOCK_NUM_CHAPTER_CHIRHO: &str = "3";
+const BLOCK_NUM_BOOK_CHIRHO: &str = "4";
+
+// Compression flag constants
+const COMP_FLAG_ZIP_CHIRHO: &str = "z";
+const COMP_FLAG_BZIP2_CHIRHO: &str = "b";
+const COMP_FLAG_XZ_CHIRHO: &str = "x";
+
+// Tool name constants
+const TOOL_OSIS2MOD_CHIRHO: &str = "osis2mod_chirho";
+const TOOL_TEI2MOD_CHIRHO: &str = "tei2mod_chirho";
+const TOOL_IMP2VS_CHIRHO: &str = "imp2vs_chirho";
+const TOOL_IMP2LD_CHIRHO: &str = "imp2ld_chirho";
+const TOOL_IMP2GBS_CHIRHO: &str = "imp2gbs_chirho";
+
+// File extension constants
+const EXT_XML_CHIRHO: &str = "xml";
+const EXT_OSIS_CHIRHO: &str = "osis";
+const EXT_TEI_CHIRHO: &str = "tei";
+const EXT_IMP_CHIRHO: &str = "imp";
+const EXT_THML_CHIRHO: &str = "thml";
+const EXT_GBF_CHIRHO: &str = "gbf";
+
 /// SWORD module creation wizard.
 #[derive(Parser, Debug)]
 #[command(name = "modwizard_chirho")]
@@ -183,7 +265,12 @@ fn interactive_wizard_chirho(args_chirho: &ArgsChirho) -> Result<ModuleConfigOpt
     println!();
 
     // Module type
-    let module_types_chirho = ["Bible", "Commentary", "Lexicon", "GenBook"];
+    let module_types_chirho = [
+        MODULE_TYPE_BIBLE_CHIRHO,
+        MODULE_TYPE_COMMENTARY_CHIRHO,
+        MODULE_TYPE_LEXICON_CHIRHO,
+        MODULE_TYPE_GENBOOK_CHIRHO,
+    ];
     let module_type_chirho = if let Some(ref t_chirho) = args_chirho.module_type_chirho {
         t_chirho.clone()
     } else {
@@ -214,7 +301,16 @@ fn interactive_wizard_chirho(args_chirho: &ArgsChirho) -> Result<ModuleConfigOpt
     let language_chirho = if let Some(ref l_chirho) = args_chirho.language_chirho {
         l_chirho.clone()
     } else {
-        let common_langs_chirho = ["en", "grc", "heb", "la", "de", "es", "fr", "other"];
+        let common_langs_chirho = [
+            LANG_EN_CHIRHO,
+            LANG_GRC_CHIRHO,
+            LANG_HEB_CHIRHO,
+            LANG_LA_CHIRHO,
+            LANG_DE_CHIRHO,
+            LANG_ES_CHIRHO,
+            LANG_FR_CHIRHO,
+            LANG_OTHER_CHIRHO,
+        ];
         prompt_select_chirho("Language", &common_langs_chirho, 0)?
     };
 
@@ -237,19 +333,25 @@ fn interactive_wizard_chirho(args_chirho: &ArgsChirho) -> Result<ModuleConfigOpt
 
     // Detect source type from file extension
     let detected_source_chirho = match input_path_chirho.extension().and_then(|e_chirho| e_chirho.to_str()) {
-        Some("xml") | Some("osis") => "OSIS",
-        Some("tei") => "TEI",
-        Some("imp") => "Plain",
-        Some("thml") => "ThML",
-        Some("gbf") => "GBF",
-        _ => "OSIS",
+        Some(EXT_XML_CHIRHO) | Some(EXT_OSIS_CHIRHO) => SOURCE_TYPE_OSIS_CHIRHO,
+        Some(EXT_TEI_CHIRHO) => SOURCE_TYPE_TEI_CHIRHO,
+        Some(EXT_IMP_CHIRHO) => SOURCE_TYPE_PLAIN_CHIRHO,
+        Some(EXT_THML_CHIRHO) => SOURCE_TYPE_THML_CHIRHO,
+        Some(EXT_GBF_CHIRHO) => SOURCE_TYPE_GBF_CHIRHO,
+        _ => SOURCE_TYPE_OSIS_CHIRHO,
     };
 
     // Source type
     let source_type_chirho = if let Some(ref s_chirho) = args_chirho.source_type_chirho {
         s_chirho.clone()
     } else {
-        let source_types_chirho = ["OSIS", "ThML", "GBF", "TEI", "Plain"];
+        let source_types_chirho = [
+            SOURCE_TYPE_OSIS_CHIRHO,
+            SOURCE_TYPE_THML_CHIRHO,
+            SOURCE_TYPE_GBF_CHIRHO,
+            SOURCE_TYPE_TEI_CHIRHO,
+            SOURCE_TYPE_PLAIN_CHIRHO,
+        ];
         let default_idx_chirho = source_types_chirho.iter().position(|s_chirho| *s_chirho == detected_source_chirho).unwrap_or(0);
         prompt_select_chirho("Source markup type", &source_types_chirho, default_idx_chirho)?
     };
@@ -265,17 +367,26 @@ fn interactive_wizard_chirho(args_chirho: &ArgsChirho) -> Result<ModuleConfigOpt
     println!();
 
     // Versification (for Bible/Commentary)
-    let versification_chirho = if module_type_chirho.eq_ignore_ascii_case("bible")
-        || module_type_chirho.eq_ignore_ascii_case("commentary")
+    let versification_chirho = if module_type_chirho.eq_ignore_ascii_case(MODULE_TYPE_BIBLE_CHIRHO)
+        || module_type_chirho.eq_ignore_ascii_case(MODULE_TYPE_COMMENTARY_CHIRHO)
     {
         if let Some(ref v_chirho) = args_chirho.versification_chirho {
             v_chirho.clone()
         } else {
-            let v11n_systems_chirho = ["KJV", "Catholic", "LXX", "Synodal", "Luther", "Vulgate", "NRSV", "Leningrad"];
+            let v11n_systems_chirho = [
+                V11N_KJV_CHIRHO,
+                V11N_CATHOLIC_CHIRHO,
+                V11N_LXX_CHIRHO,
+                V11N_SYNODAL_CHIRHO,
+                V11N_LUTHER_CHIRHO,
+                V11N_VULGATE_CHIRHO,
+                V11N_NRSV_CHIRHO,
+                V11N_LENINGRAD_CHIRHO,
+            ];
             prompt_select_chirho("Versification system", &v11n_systems_chirho, 0)?
         }
     } else {
-        "KJV".to_string()
+        V11N_KJV_CHIRHO.to_string()
     };
 
     println!();
@@ -284,7 +395,11 @@ fn interactive_wizard_chirho(args_chirho: &ArgsChirho) -> Result<ModuleConfigOpt
     let compress_chirho = if let Some(ref c_chirho) = args_chirho.compress_chirho {
         Some(c_chirho.clone())
     } else if prompt_yn_chirho("Use compression", true)? {
-        let comp_types_chirho = ["ZIP", "BZIP2", "XZ"];
+        let comp_types_chirho = [
+            COMPRESS_TYPE_ZIP_CHIRHO,
+            COMPRESS_TYPE_BZIP2_CHIRHO,
+            COMPRESS_TYPE_XZ_CHIRHO,
+        ];
         Some(prompt_select_chirho("Compression type", &comp_types_chirho, 0)?)
     } else {
         None
@@ -295,11 +410,15 @@ fn interactive_wizard_chirho(args_chirho: &ArgsChirho) -> Result<ModuleConfigOpt
         if let Some(ref b_chirho) = args_chirho.block_type_chirho {
             b_chirho.clone()
         } else {
-            let block_types_chirho = ["verse", "chapter", "book"];
+            let block_types_chirho = [
+                BLOCK_TYPE_VERSE_CHIRHO,
+                BLOCK_TYPE_CHAPTER_CHIRHO,
+                BLOCK_TYPE_BOOK_CHIRHO,
+            ];
             prompt_select_chirho("Block type (how to group compressed data)", &block_types_chirho, 1)?
         }
     } else {
-        "verse".to_string()
+        BLOCK_TYPE_VERSE_CHIRHO.to_string()
     };
 
     Ok(ModuleConfigOptionsChirho {
@@ -344,13 +463,14 @@ fn create_module_chirho(config_chirho: &ModuleConfigOptionsChirho) -> Result<()>
     use std::process::Command;
 
     // Determine which tool to use based on input file and module type
-    let tool_chirho = match (config_chirho.module_type_chirho.to_lowercase().as_str(), config_chirho.source_type_chirho.as_str()) {
-        ("bible", "OSIS") | ("commentary", "OSIS") => "osis2mod_chirho",
-        ("lexicon", "TEI") => "tei2mod_chirho",
-        ("bible", "Plain") | ("commentary", "Plain") => "imp2vs_chirho",
-        ("lexicon", "Plain") => "imp2ld_chirho",
-        ("genbook", _) => "imp2gbs_chirho",
-        _ => "osis2mod_chirho",
+    let module_type_lower_chirho = config_chirho.module_type_chirho.to_lowercase();
+    let tool_chirho = match (module_type_lower_chirho.as_str(), config_chirho.source_type_chirho.as_str()) {
+        (t_chirho, SOURCE_TYPE_OSIS_CHIRHO) if t_chirho == MODULE_TYPE_BIBLE_CHIRHO.to_lowercase() || t_chirho == MODULE_TYPE_COMMENTARY_CHIRHO.to_lowercase() => TOOL_OSIS2MOD_CHIRHO,
+        (t_chirho, SOURCE_TYPE_TEI_CHIRHO) if t_chirho == MODULE_TYPE_LEXICON_CHIRHO.to_lowercase() => TOOL_TEI2MOD_CHIRHO,
+        (t_chirho, SOURCE_TYPE_PLAIN_CHIRHO) if t_chirho == MODULE_TYPE_BIBLE_CHIRHO.to_lowercase() || t_chirho == MODULE_TYPE_COMMENTARY_CHIRHO.to_lowercase() => TOOL_IMP2VS_CHIRHO,
+        (t_chirho, SOURCE_TYPE_PLAIN_CHIRHO) if t_chirho == MODULE_TYPE_LEXICON_CHIRHO.to_lowercase() => TOOL_IMP2LD_CHIRHO,
+        (t_chirho, _) if t_chirho == MODULE_TYPE_GENBOOK_CHIRHO.to_lowercase() => TOOL_IMP2GBS_CHIRHO,
+        _ => TOOL_OSIS2MOD_CHIRHO,
     };
 
     // Create output directory
@@ -362,8 +482,8 @@ fn create_module_chirho(config_chirho: &ModuleConfigOptionsChirho) -> Result<()>
     cmd_chirho.arg(&config_chirho.input_path_chirho);
 
     // Add versification for Bible/Commentary
-    if config_chirho.module_type_chirho.eq_ignore_ascii_case("bible")
-        || config_chirho.module_type_chirho.eq_ignore_ascii_case("commentary")
+    if config_chirho.module_type_chirho.eq_ignore_ascii_case(MODULE_TYPE_BIBLE_CHIRHO)
+        || config_chirho.module_type_chirho.eq_ignore_ascii_case(MODULE_TYPE_COMMENTARY_CHIRHO)
     {
         cmd_chirho.arg("-v");
         cmd_chirho.arg(&config_chirho.versification_chirho);
@@ -374,18 +494,18 @@ fn create_module_chirho(config_chirho: &ModuleConfigOptionsChirho) -> Result<()>
         cmd_chirho.arg("-z");
 
         let block_num_chirho = match config_chirho.block_type_chirho.as_str() {
-            "verse" => "2",
-            "chapter" => "3",
-            "book" => "4",
-            _ => "3",
+            BLOCK_TYPE_VERSE_CHIRHO => BLOCK_NUM_VERSE_CHIRHO,
+            BLOCK_TYPE_CHAPTER_CHIRHO => BLOCK_NUM_CHAPTER_CHIRHO,
+            BLOCK_TYPE_BOOK_CHIRHO => BLOCK_NUM_BOOK_CHIRHO,
+            _ => BLOCK_NUM_CHAPTER_CHIRHO,
         };
         cmd_chirho.arg("-b");
         cmd_chirho.arg(block_num_chirho);
 
         let comp_flag_chirho = match comp_chirho.to_uppercase().as_str() {
-            "BZIP2" => "b",
-            "XZ" => "x",
-            _ => "z",
+            COMPRESS_TYPE_BZIP2_CHIRHO => COMP_FLAG_BZIP2_CHIRHO,
+            COMPRESS_TYPE_XZ_CHIRHO => COMP_FLAG_XZ_CHIRHO,
+            _ => COMP_FLAG_ZIP_CHIRHO,
         };
         cmd_chirho.arg("-c");
         cmd_chirho.arg(comp_flag_chirho);
@@ -433,15 +553,16 @@ fn create_module_chirho(config_chirho: &ModuleConfigOptionsChirho) -> Result<()>
 fn create_conf_file_chirho(config_chirho: &ModuleConfigOptionsChirho) -> Result<()> {
     let conf_path_chirho = config_chirho.output_path_chirho.join(format!("{}.conf", config_chirho.name_chirho.to_lowercase()));
 
-    let mod_drv_chirho = match (config_chirho.module_type_chirho.to_lowercase().as_str(), config_chirho.compress_chirho.is_some()) {
-        ("bible", false) => "RawText",
-        ("bible", true) => "zText",
-        ("commentary", false) => "RawCom",
-        ("commentary", true) => "zCom",
-        ("lexicon", false) => "RawLD",
-        ("lexicon", true) => "zLD",
-        ("genbook", _) => "RawGenBook",
-        _ => "RawText",
+    let module_type_lower_chirho = config_chirho.module_type_chirho.to_lowercase();
+    let mod_drv_chirho = match (module_type_lower_chirho.as_str(), config_chirho.compress_chirho.is_some()) {
+        (t_chirho, false) if t_chirho == MODULE_TYPE_BIBLE_CHIRHO.to_lowercase() => MOD_DRV_RAW_TEXT_CHIRHO,
+        (t_chirho, true) if t_chirho == MODULE_TYPE_BIBLE_CHIRHO.to_lowercase() => MOD_DRV_Z_TEXT_CHIRHO,
+        (t_chirho, false) if t_chirho == MODULE_TYPE_COMMENTARY_CHIRHO.to_lowercase() => MOD_DRV_RAW_COM_CHIRHO,
+        (t_chirho, true) if t_chirho == MODULE_TYPE_COMMENTARY_CHIRHO.to_lowercase() => MOD_DRV_Z_COM_CHIRHO,
+        (t_chirho, false) if t_chirho == MODULE_TYPE_LEXICON_CHIRHO.to_lowercase() => MOD_DRV_RAW_LD_CHIRHO,
+        (t_chirho, true) if t_chirho == MODULE_TYPE_LEXICON_CHIRHO.to_lowercase() => MOD_DRV_Z_LD_CHIRHO,
+        (t_chirho, _) if t_chirho == MODULE_TYPE_GENBOOK_CHIRHO.to_lowercase() => MOD_DRV_RAW_GENBOOK_CHIRHO,
+        _ => MOD_DRV_RAW_TEXT_CHIRHO,
     };
 
     let data_path_chirho = format!("./modules/{}/{}", config_chirho.module_type_chirho.to_lowercase(), config_chirho.name_chirho.to_lowercase());
@@ -462,8 +583,8 @@ fn create_conf_file_chirho(config_chirho: &ModuleConfigOptionsChirho) -> Result<
         config_chirho.source_type_chirho,
     );
 
-    if config_chirho.module_type_chirho.eq_ignore_ascii_case("bible")
-        || config_chirho.module_type_chirho.eq_ignore_ascii_case("commentary")
+    if config_chirho.module_type_chirho.eq_ignore_ascii_case(MODULE_TYPE_BIBLE_CHIRHO)
+        || config_chirho.module_type_chirho.eq_ignore_ascii_case(MODULE_TYPE_COMMENTARY_CHIRHO)
     {
         conf_content_chirho.push_str(&format!("Versification={}\n", config_chirho.versification_chirho));
     }
@@ -471,10 +592,10 @@ fn create_conf_file_chirho(config_chirho: &ModuleConfigOptionsChirho) -> Result<
     if let Some(ref comp_chirho) = config_chirho.compress_chirho {
         conf_content_chirho.push_str(&format!("CompressType={}\n", comp_chirho));
         let block_type_str_chirho = match config_chirho.block_type_chirho.as_str() {
-            "verse" => "VERSEBLOCKS",
-            "chapter" => "CHAPTERBLOCKS",
-            "book" => "BOOKBLOCKS",
-            _ => "CHAPTERBLOCKS",
+            BLOCK_TYPE_VERSE_CHIRHO => BLOCK_CONFIG_VERSE_CHIRHO,
+            BLOCK_TYPE_CHAPTER_CHIRHO => BLOCK_CONFIG_CHAPTER_CHIRHO,
+            BLOCK_TYPE_BOOK_CHIRHO => BLOCK_CONFIG_BOOK_CHIRHO,
+            _ => BLOCK_CONFIG_CHAPTER_CHIRHO,
         };
         conf_content_chirho.push_str(&format!("BlockType={}\n", block_type_str_chirho));
     }
@@ -491,11 +612,11 @@ fn main() -> Result<()> {
     let config_chirho = if args_chirho.non_interactive_chirho {
         // Non-interactive mode requires all options
         let module_type_chirho = args_chirho.module_type_chirho.clone()
-            .ok_or_else(|| anyhow::anyhow!("--type required in non-interactive mode"))?;
+            .ok_or_else(|| anyhow::anyhow!("--type-chirho required in non-interactive mode"))?;
         let name_chirho = args_chirho.name_chirho.clone()
-            .ok_or_else(|| anyhow::anyhow!("--name required in non-interactive mode"))?;
+            .ok_or_else(|| anyhow::anyhow!("--name-chirho required in non-interactive mode"))?;
         let input_path_chirho = args_chirho.input_chirho.clone()
-            .ok_or_else(|| anyhow::anyhow!("--input required in non-interactive mode"))?;
+            .ok_or_else(|| anyhow::anyhow!("--input-chirho required in non-interactive mode"))?;
 
         ModuleConfigOptionsChirho {
             module_type_chirho,
@@ -503,19 +624,19 @@ fn main() -> Result<()> {
             description_chirho: args_chirho.description_chirho.clone().unwrap_or_else(|| format!("{} module", name_chirho)),
             input_path_chirho: input_path_chirho.clone(),
             output_path_chirho: args_chirho.output_chirho.clone().unwrap_or_else(|| PathBuf::from(format!("./modules/{}", name_chirho.to_lowercase()))),
-            language_chirho: args_chirho.language_chirho.clone().unwrap_or_else(|| "en".to_string()),
-            versification_chirho: args_chirho.versification_chirho.clone().unwrap_or_else(|| "KJV".to_string()),
+            language_chirho: args_chirho.language_chirho.clone().unwrap_or_else(|| LANG_EN_CHIRHO.to_string()),
+            versification_chirho: args_chirho.versification_chirho.clone().unwrap_or_else(|| V11N_KJV_CHIRHO.to_string()),
             source_type_chirho: args_chirho.source_type_chirho.clone().unwrap_or_else(|| {
                 match input_path_chirho.extension().and_then(|e_chirho| e_chirho.to_str()) {
-                    Some("tei") => "TEI",
-                    Some("thml") => "ThML",
-                    Some("gbf") => "GBF",
-                    Some("imp") => "Plain",
-                    _ => "OSIS",
+                    Some(EXT_TEI_CHIRHO) => SOURCE_TYPE_TEI_CHIRHO,
+                    Some(EXT_THML_CHIRHO) => SOURCE_TYPE_THML_CHIRHO,
+                    Some(EXT_GBF_CHIRHO) => SOURCE_TYPE_GBF_CHIRHO,
+                    Some(EXT_IMP_CHIRHO) => SOURCE_TYPE_PLAIN_CHIRHO,
+                    _ => SOURCE_TYPE_OSIS_CHIRHO,
                 }.to_string()
             }),
             compress_chirho: args_chirho.compress_chirho.clone(),
-            block_type_chirho: args_chirho.block_type_chirho.clone().unwrap_or_else(|| "chapter".to_string()),
+            block_type_chirho: args_chirho.block_type_chirho.clone().unwrap_or_else(|| BLOCK_TYPE_CHAPTER_CHIRHO.to_string()),
         }
     } else {
         interactive_wizard_chirho(&args_chirho)?

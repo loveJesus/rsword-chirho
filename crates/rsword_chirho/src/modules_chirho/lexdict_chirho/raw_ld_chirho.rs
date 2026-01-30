@@ -104,8 +104,8 @@ impl RawLdChirho {
     /// Get all keys in the lexicon.
     pub fn get_keys_chirho(&mut self) -> ResultChirho<Vec<String>> {
         let mut keys_chirho = Vec::new();
-        for i in 0..self.entry_count_chirho {
-            let (key_chirho, _) = self.storage_chirho.read_entry_chirho(i)?;
+        for i_chirho in 0..self.entry_count_chirho {
+            let (key_chirho, _) = self.storage_chirho.read_entry_chirho(i_chirho)?;
             keys_chirho.push(key_chirho);
         }
         Ok(keys_chirho)
@@ -116,8 +116,8 @@ impl RawLdChirho {
         let pattern_lower_chirho = pattern_chirho.to_lowercase();
         let mut matches_chirho = Vec::new();
 
-        for i in 0..self.entry_count_chirho {
-            let (key_chirho, _) = self.storage_chirho.read_entry_chirho(i)?;
+        for i_chirho in 0..self.entry_count_chirho {
+            let (key_chirho, _) = self.storage_chirho.read_entry_chirho(i_chirho)?;
             if key_chirho.to_lowercase().contains(&pattern_lower_chirho) {
                 matches_chirho.push(key_chirho);
             }

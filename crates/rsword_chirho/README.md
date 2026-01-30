@@ -162,8 +162,8 @@ install_mgr_chirho.sync_config_chirho()?;
 
 // List available modules from CrossWire
 let modules_chirho = install_mgr_chirho.get_remote_modules_chirho("CrossWire")?;
-for m in modules_chirho {
-    println!("{}: {}", m.name_chirho, m.description_chirho);
+for m_chirho in modules_chirho {
+    println!("{}: {}", m_chirho.name_chirho, m_chirho.description_chirho);
 }
 
 // Install a module

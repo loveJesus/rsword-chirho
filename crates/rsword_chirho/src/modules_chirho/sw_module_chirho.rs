@@ -214,8 +214,8 @@ impl ModuleBaseChirho {
 
     /// Pop error state.
     pub fn pop_error_chirho(&mut self) -> bool {
-        let e = self.error_chirho;
+        let e_chirho = self.error_chirho;
         self.error_chirho = false;
-        e
+        e_chirho
     }
 }

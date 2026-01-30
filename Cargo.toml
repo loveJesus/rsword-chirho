@@ -72,4 +72,4 @@ ureq = "3.0"
 rayon = "1.10"
 
 # Internal crates
-rsword_chirho = { path = "crates/rsword_chirho" }
+rsword_chirho = { version = "0.2.0", path = "crates/rsword_chirho" }

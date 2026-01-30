@@ -4,9 +4,74 @@
 
 //! VerseKey implementation for Bible verse navigation.
 //!
-//! VerseKey is the key type used for Bible texts and commentaries.
+//! [`VerseKeyChirho`] is the primary key type for Bible texts and commentaries.
 //! It handles book, chapter, and verse references with support for
 //! different versification systems.
+//!
+//! ## Parsing References
+//!
+//! ```rust
+//! use rsword_chirho::VerseKeyChirho;
+//!
+//! // Various reference formats are supported
+//! let key1_chirho = VerseKeyChirho::from_str_chirho("Genesis 1:1").unwrap();
+//! let key2_chirho = VerseKeyChirho::from_str_chirho("Gen 1:1").unwrap();       // Abbreviation
+//! let key3_chirho = VerseKeyChirho::from_str_chirho("1 John 3:16").unwrap();   // Numbered book
+//! let key4_chirho = VerseKeyChirho::from_str_chirho("I John 3:16").unwrap();   // Roman numeral
+//! let key5_chirho = VerseKeyChirho::from_str_chirho("Ps 23").unwrap();         // Chapter only
+//! ```
+//!
+//! ## Navigation
+//!
+//! ```rust,ignore
+//! use rsword_chirho::VerseKeyChirho;
+//!
+//! let mut key_chirho = VerseKeyChirho::from_str_chirho("Genesis 1:1").unwrap();
+//!
+//! // Move forward
+//! key_chirho.increment_chirho(1);
+//! println!("Now at: {}", key_chirho); // Genesis 1:2
+//!
+//! // Crosses chapter boundary automatically
+//! key_chirho.increment_chirho(30);
+//! println!("Chapter: {}", key_chirho.get_chapter_chirho());
+//!
+//! // Move backward
+//! key_chirho.decrement_chirho(1);
+//! ```
+//!
+//! ## Verse Ranges
+//!
+//! Set bounds for iteration:
+//!
+//! ```rust,ignore
+//! use rsword_chirho::VerseKeyChirho;
+//!
+//! let mut key_chirho = VerseKeyChirho::from_str_chirho("Genesis 1:1").unwrap();
+//!
+//! // Set bounds for iteration
+//! key_chirho.set_lower_bound_chirho(&VerseKeyChirho::from_str_chirho("Genesis 1:1").unwrap());
+//! key_chirho.set_upper_bound_chirho(&VerseKeyChirho::from_str_chirho("Genesis 1:10").unwrap());
+//!
+//! // Iterate through verses 1-10
+//! let mut count_chirho = 0;
+//! while !key_chirho.pop_error_chirho() {
+//!     count_chirho += 1;
+//!     key_chirho.increment_chirho(1);
+//! }
+//! println!("Total verses: {}", count_chirho);
+//! ```
+//!
+//! ## Versification Support
+//!
+//! ```rust
+//! use std::sync::Arc;
+//! use rsword_chirho::VerseKeyChirho;
+//! use rsword_chirho::versification_chirho::catholic_chirho;
+//!
+//! // Use Catholic versification
+//! let key_chirho = VerseKeyChirho::with_versification_chirho(Arc::new(catholic_chirho().clone()));
+//! ```
 
 use std::cmp::Ordering;
 use std::fmt;

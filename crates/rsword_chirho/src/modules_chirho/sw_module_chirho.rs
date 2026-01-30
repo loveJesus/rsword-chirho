@@ -3,6 +3,46 @@
 // John 3:16
 
 //! Base module trait and common functionality.
+//!
+//! The [`SwModuleChirho`] trait defines the interface for all SWORD modules.
+//! Implementations include Bible texts, commentaries, lexicons, and general books.
+//!
+//! ## Module Interface
+//!
+//! All modules implement these core operations:
+//!
+//! - **Navigation**: Set position via key, increment/decrement
+//! - **Reading**: Get raw text, rendered text, or stripped text
+//! - **Metadata**: Name, description, language, encoding, markup type
+//! - **Encryption**: Check encryption status, set cipher key
+//!
+//! ## Usage Pattern
+//!
+//! ```rust,ignore
+//! use rsword_chirho::{SwMgrChirho, SwModuleChirho, VerseKeyChirho};
+//!
+//! let mgr_chirho = SwMgrChirho::with_system_paths_chirho().unwrap();
+//!
+//! if let Some(mut module_chirho) = mgr_chirho.get_module_driver_chirho("KJV").unwrap() {
+//!     // Get module metadata
+//!     println!("Name: {}", module_chirho.name_chirho());
+//!     println!("Description: {}", module_chirho.description_chirho());
+//!     println!("Language: {}", module_chirho.language_chirho());
+//!
+//!     // Navigate and read
+//!     let key_chirho = VerseKeyChirho::from_str_chirho("John 1:1").unwrap();
+//!     module_chirho.set_key_chirho(&key_chirho).unwrap();
+//!
+//!     // Raw text (with markup)
+//!     let raw_chirho = module_chirho.get_raw_entry_chirho().unwrap();
+//!
+//!     // Rendered text (filters applied)
+//!     let rendered_chirho = module_chirho.render_text_chirho().unwrap();
+//!
+//!     // Plain text (for search/indexing)
+//!     let plain_chirho = module_chirho.strip_text_chirho().unwrap();
+//! }
+//! ```
 
 use crate::config_chirho::ModuleConfigChirho;
 use crate::error_chirho::ResultChirho;

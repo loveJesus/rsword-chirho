@@ -53,7 +53,7 @@ pub enum StrongsFormatChirho {
     SubscriptChirho,
     /// Show in parentheses (e.g., word (H1234)).
     ParenthesesChirho,
-    /// Show in brackets (e.g., word [H1234]).
+    /// Show in brackets (e.g., word \[H1234\]).
     BracketsChirho,
     /// Show with hover/tooltip.
     #[default]

@@ -156,7 +156,7 @@
       "id_chirho": "RSWORD-007",
       "title_chirho": "API Documentation",
       "priority_chirho": "P1_chirho",
-      "status_chirho": "planned",
+      "status_chirho": "complete",
       "description_chirho": "Add comprehensive documentation for the public API",
       "requirements_chirho": [
         "Doc comments for all public types and functions",

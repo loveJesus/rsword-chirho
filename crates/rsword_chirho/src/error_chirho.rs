@@ -3,6 +3,53 @@
 // John 3:16
 
 //! Error types for the rsword_chirho library.
+//!
+//! All operations that can fail return [`ResultChirho<T>`], which is an alias for
+//! `Result<T, ErrorChirho>`.
+//!
+//! ## Error Handling
+//!
+//! ```rust
+//! use rsword_chirho::{VerseKeyChirho, ErrorChirho, ResultChirho};
+//!
+//! fn lookup_verse_chirho(reference_chirho: &str) -> ResultChirho<String> {
+//!     let key_chirho = VerseKeyChirho::from_str_chirho(reference_chirho)?;
+//!     Ok(key_chirho.to_string())
+//! }
+//!
+//! // Handle specific errors
+//! match lookup_verse_chirho("Invalid 99:99") {
+//!     Ok(text_chirho) => println!("{}", text_chirho),
+//!     Err(ErrorChirho::InvalidVerseReferenceChirho { reference_chirho }) => {
+//!         eprintln!("Bad reference: {}", reference_chirho);
+//!     }
+//!     Err(e) => eprintln!("Error: {}", e),
+//! }
+//! ```
+//!
+//! ## Common Errors
+//!
+//! | Error | Description |
+//! |-------|-------------|
+//! | [`ErrorChirho::ModuleNotFoundChirho`] | Module not installed or path invalid |
+//! | [`ErrorChirho::InvalidVerseReferenceChirho`] | Cannot parse verse reference |
+//! | [`ErrorChirho::InvalidBookNameChirho`] | Book name not recognized |
+//! | [`ErrorChirho::VerseOutOfBoundsChirho`] | Verse doesn't exist in versification |
+//! | [`ErrorChirho::CipherKeyRequiredChirho`] | Encrypted module needs unlock key |
+//! | [`ErrorChirho::NetworkChirho`] | Download or connection failed |
+//!
+//! ## Creating Errors
+//!
+//! Use convenience constructors for common error types:
+//!
+//! ```rust
+//! use rsword_chirho::ErrorChirho;
+//!
+//! // Create specific errors
+//! let err_chirho = ErrorChirho::module_not_found_chirho("KJV");
+//! let err_chirho = ErrorChirho::invalid_verse_reference_chirho("BadRef");
+//! let err_chirho = ErrorChirho::generic_chirho("Something went wrong");
+//! ```
 
 use std::io;
 use std::path::PathBuf;

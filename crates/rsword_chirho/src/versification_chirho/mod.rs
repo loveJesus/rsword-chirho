@@ -5,8 +5,71 @@
 //! Versification systems for Bible navigation.
 //!
 //! Different Bible translations use different verse numbering systems.
-//! This module provides support for various versification schemes including
-//! KJV, Catholic, LXX, and others.
+//! This module provides support for various versification schemes.
+//!
+//! ## Available Systems
+//!
+//! | System | Aliases | Description |
+//! |--------|---------|-------------|
+//! | KJV | - | King James Version (default, Protestant) |
+//! | Catholic | - | Roman Catholic canon (includes deuterocanonicals) |
+//! | LXX | Septuagint | Greek Septuagint ordering |
+//! | Synodal | SynodalProt | Russian Synodal translation |
+//! | Luther | German | German Lutheran Bible ordering |
+//! | Vulgate | Vulg | Latin Vulgate versification |
+//! | NRSV | - | New Revised Standard Version |
+//! | Leningrad | MT, Hebrew | Leningrad Codex (Hebrew Bible, OT only) |
+//! | Ethiopian | Ethiopic | Ethiopian Orthodox canon (largest canon) |
+//!
+//! ## Usage
+//!
+//! ```rust
+//! use rsword_chirho::versification_chirho::{get_versification_chirho, kjv_chirho};
+//! use rsword_chirho::versification_chirho::TestamentChirho;
+//!
+//! // Get a versification system
+//! let kjv_chirho = get_versification_chirho("KJV").unwrap();
+//! let catholic_chirho = get_versification_chirho("Catholic").unwrap();
+//!
+//! // Query book information
+//! let (testament_chirho, book_idx_chirho) = kjv_chirho.lookup_book_chirho("Genesis").unwrap();
+//! assert_eq!(testament_chirho, TestamentChirho::OldChirho);
+//!
+//! // Get verse counts
+//! let genesis_chirho = kjv_chirho.get_book_chirho(testament_chirho, book_idx_chirho).unwrap();
+//! assert_eq!(genesis_chirho.chapter_count_chirho, 50);
+//! assert_eq!(genesis_chirho.max_verse_chirho(1), Some(31)); // Gen 1 has 31 verses
+//! ```
+//!
+//! ## Book Order Differences
+//!
+//! Different versifications may have different book orders or include different books:
+//!
+//! - **KJV/Protestant**: 39 OT + 27 NT = 66 books
+//! - **Catholic**: Includes Tobit, Judith, Wisdom, Sirach, Baruch, 1-2 Maccabees
+//! - **LXX**: Greek ordering with additions (1 Esdras, Psalm 151, etc.)
+//! - **Leningrad**: Hebrew Bible order (Torah, Nevi'im, Ketuvim), OT only
+//! - **Ethiopian**: Largest canon with 1 Enoch, Jubilees, and more
+//!
+//! ## Manager
+//!
+//! Use [`VersificationManagerChirho`] to cache and reuse versification instances:
+//!
+//! ```rust
+//! use rsword_chirho::versification_chirho::VersificationManagerChirho;
+//!
+//! let manager_chirho = VersificationManagerChirho::new_chirho();
+//!
+//! // List available systems
+//! for name_chirho in manager_chirho.list_available_chirho() {
+//!     println!("{}", name_chirho);
+//! }
+//!
+//! // Get a versification (cached)
+//! let kjv_chirho = manager_chirho.get_chirho("KJV").unwrap();
+//! let kjv2_chirho = manager_chirho.get_chirho("KJV").unwrap();
+//! // Both point to same Arc instance
+//! ```
 
 pub mod canons_chirho;
 pub mod manager_chirho;

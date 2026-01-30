@@ -5,6 +5,91 @@
 //! Module import functionality.
 //!
 //! Parsers for OSIS, TEI, IMP, VPL, and other input formats.
+//! Use these to create SWORD modules from source texts.
+//!
+//! ## Supported Formats
+//!
+//! | Format | Parser | Use Case |
+//! |--------|--------|----------|
+//! | OSIS | [`OsisParserChirho`] | Bible texts with scholarly markup |
+//! | TEI | [`TeiParserChirho`] | Lexicons and dictionaries |
+//! | VPL | [`VplParserChirho`] | Simple verse-per-line text |
+//! | IMP | [`parse_imp_chirho`] | SWORD import format |
+//!
+//! ## OSIS Parser
+//!
+//! Parse OSIS (Open Scripture Information Standard) XML for Bible texts:
+//!
+//! ```rust,ignore
+//! use rsword_chirho::import_chirho::{OsisParserChirho, OsisParserConfigChirho};
+//! use std::path::Path;
+//!
+//! let config_chirho = OsisParserConfigChirho::default();
+//! let mut parser_chirho = OsisParserChirho::new_chirho(config_chirho);
+//!
+//! // Parse OSIS file
+//! let doc_chirho = parser_chirho.parse_file_chirho(Path::new("bible.osis")).unwrap();
+//!
+//! // Access verses
+//! for verse_chirho in &doc_chirho.verses_chirho {
+//!     println!("{}: {}", verse_chirho.osis_id_chirho, verse_chirho.text_chirho);
+//! }
+//! ```
+//!
+//! ## TEI Parser
+//!
+//! Parse TEI (Text Encoding Initiative) XML for lexicons:
+//!
+//! ```rust,ignore
+//! use rsword_chirho::import_chirho::{TeiParserChirho, TeiParserConfigChirho};
+//! use std::path::Path;
+//!
+//! let config_chirho = TeiParserConfigChirho::default();
+//! let mut parser_chirho = TeiParserChirho::new_chirho(config_chirho);
+//!
+//! // Parse TEI dictionary file
+//! let doc_chirho = parser_chirho.parse_file_chirho(Path::new("lexicon.xml")).unwrap();
+//!
+//! // Access entries
+//! for entry_chirho in &doc_chirho.entries_chirho {
+//!     println!("{}: {}", entry_chirho.key_chirho, entry_chirho.definition_chirho);
+//! }
+//! ```
+//!
+//! ## VPL (Verse Per Line) Parser
+//!
+//! Simple format with one verse per line:
+//!
+//! ```rust,ignore
+//! use rsword_chirho::import_chirho::{VplParserChirho, VplParserConfigChirho};
+//!
+//! let config_chirho = VplParserConfigChirho::default();
+//! let parser_chirho = VplParserChirho::new_chirho(config_chirho);
+//!
+//! let content_chirho = "Gen 1:1\tIn the beginning God created the heaven and the earth.\n\
+//!                       Gen 1:2\tAnd the earth was without form, and void.";
+//!
+//! let entries_chirho = parser_chirho.parse_chirho(content_chirho);
+//! println!("Parsed {} entries", entries_chirho.len());
+//! ```
+//!
+//! ## IMP Format
+//!
+//! SWORD's native import format uses `$$$key` markers:
+//!
+//! ```rust
+//! use rsword_chirho::import_chirho::parse_imp_chirho;
+//!
+//! let content_chirho = "$$$Genesis 1:1
+//! In the beginning God created the heaven and the earth.
+//! $$$Genesis 1:2
+//! And the earth was without form, and void.
+//! ";
+//!
+//! let entries_chirho = parse_imp_chirho(content_chirho);
+//! assert_eq!(entries_chirho.len(), 2);
+//! assert_eq!(entries_chirho[0].key_chirho, "Genesis 1:1");
+//! ```
 
 mod vpl_parser_chirho;
 mod osis_parser_chirho;

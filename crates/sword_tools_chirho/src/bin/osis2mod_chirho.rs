@@ -160,10 +160,14 @@ About=Created by osis2mod_chirho from rsword-chirho
 /// Parse OSIS XML and extract verses.
 ///
 /// Handles both milestone-style:
-///   <verse sID="Gen.1.1" osisID="Gen.1.1"/>...<verse eID="Gen.1.1"/>
+/// ```xml
+/// <verse sID="Gen.1.1" osisID="Gen.1.1"/>...<verse eID="Gen.1.1"/>
+/// ```
 ///
 /// And container-style:
-///   <verse osisID="Gen.1.1">...</verse>
+/// ```xml
+/// <verse osisID="Gen.1.1">...</verse>
+/// ```
 fn parse_osis_chirho(
     content_chirho: &str,
     v11n_chirho: &VersificationChirho,

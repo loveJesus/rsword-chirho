@@ -6,6 +6,82 @@
 //!
 //! Filters transform module text between different formats (OSIS, ThML, GBF, etc.)
 //! and apply options like Strong's numbers, footnotes, and morphology.
+//!
+//! ## Supported Formats
+//!
+//! | Source | To HTML | To Plain |
+//! |--------|---------|----------|
+//! | OSIS | [`OsisToHtmlFilterChirho`] | [`OsisToPlainFilterChirho`] |
+//! | ThML | [`ThmlToHtmlFilterChirho`] | [`ThmlToPlainFilterChirho`] |
+//! | GBF | [`GbfToHtmlFilterChirho`] | [`GbfToPlainFilterChirho`] |
+//! | TEI | [`TeiToHtmlFilterChirho`] | [`TeiToPlainFilterChirho`] |
+//!
+//! ## Basic Usage
+//!
+//! ```rust
+//! use rsword_chirho::filters_chirho::{FilterChirho, OsisToHtmlFilterChirho, OsisToPlainFilterChirho};
+//!
+//! // Create filters
+//! let html_filter_chirho = OsisToHtmlFilterChirho::new_chirho();
+//! let plain_filter_chirho = OsisToPlainFilterChirho::new_chirho();
+//!
+//! let osis_text_chirho = r#"<verse osisID="John.3.16">For God so loved the world</verse>"#;
+//!
+//! // Convert to HTML
+//! let html_chirho = html_filter_chirho.process_chirho(osis_text_chirho).unwrap();
+//!
+//! // Convert to plain text
+//! let plain_chirho = plain_filter_chirho.process_chirho(osis_text_chirho).unwrap();
+//! ```
+//!
+//! ## Filter Options
+//!
+//! Control what markup features are included in output:
+//!
+//! ```rust
+//! use rsword_chirho::filters_chirho::FilterOptionsChirho;
+//!
+//! // Enable all features
+//! let all_chirho = FilterOptionsChirho::all_chirho();
+//!
+//! // Minimal output
+//! let none_chirho = FilterOptionsChirho::none_chirho();
+//!
+//! // Custom options
+//! let custom_chirho = FilterOptionsChirho {
+//!     strongs_chirho: true,      // Strong's numbers
+//!     footnotes_chirho: true,    // Footnotes
+//!     red_letter_chirho: true,   // Words of Christ in red
+//!     ..Default::default()
+//! };
+//! ```
+//!
+//! ## Filter Chains
+//!
+//! Apply multiple filters in sequence:
+//!
+//! ```rust
+//! use rsword_chirho::filters_chirho::{FilterChainChirho, StripFilterChirho, PlainFilterChirho};
+//!
+//! let mut chain_chirho = FilterChainChirho::new_chirho();
+//! chain_chirho.add_chirho(Box::new(StripFilterChirho));
+//! chain_chirho.add_chirho(Box::new(PlainFilterChirho));
+//!
+//! let result_chirho = chain_chirho.process_chirho("<p>Text with <b>markup</b></p>").unwrap();
+//! assert_eq!(result_chirho, "Text with markup");
+//! ```
+//!
+//! ## HTML Safety
+//!
+//! Use [`escape_html_chirho`] to prevent XSS when rendering user content:
+//!
+//! ```rust
+//! use rsword_chirho::filters_chirho::escape_html_chirho;
+//!
+//! let unsafe_chirho = "<script>alert('xss')</script>";
+//! let safe_chirho = escape_html_chirho(unsafe_chirho);
+//! assert_eq!(safe_chirho, "&lt;script&gt;alert(&#39;xss&#39;)&lt;/script&gt;");
+//! ```
 
 mod osis_chirho;
 mod thml_chirho;

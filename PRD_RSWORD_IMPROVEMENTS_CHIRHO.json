@@ -1,0 +1,274 @@
+{
+  "project_name_chirho": "rsword-chirho Improvements",
+  "version_chirho": "0.2.0",
+  "description_chirho": "Product Requirements Document for planned improvements to the rsword-chirho pure Rust SWORD library port",
+  "created_chirho": "2026-01-29",
+  "priorities_chirho": {
+    "P0_chirho": "Critical - must have for production",
+    "P1_chirho": "High - important for usability",
+    "P2_chirho": "Medium - nice to have",
+    "P3_chirho": "Low - future consideration"
+  },
+  "features_chirho": [
+    {
+      "id_chirho": "RSWORD-001",
+      "title_chirho": "OSIS Parser Implementation",
+      "priority_chirho": "P1_chirho",
+      "status_chirho": "planned",
+      "description_chirho": "Implement a complete OSIS (Open Scripture Information Standard) XML parser for importing Bible modules",
+      "requirements_chirho": [
+        "Parse OSIS XML documents into internal verse structure",
+        "Support all major OSIS elements: book, chapter, verse, note, reference",
+        "Handle Strong's numbers, morphology, and other scholarly markup",
+        "Support verse bridges and variant readings",
+        "Generate IMP format output for module creation"
+      ],
+      "acceptance_criteria_chirho": [
+        "Can parse CrossWire OSIS files without errors",
+        "Preserves all scholarly markup data",
+        "Round-trip conversion (OSIS -> module -> OSIS) preserves content"
+      ],
+      "dependencies_chirho": ["quick-xml crate already available"],
+      "estimated_files_chirho": [
+        "crates/rsword_chirho/src/import_chirho/osis_parser_chirho.rs"
+      ]
+    },
+    {
+      "id_chirho": "RSWORD-002",
+      "title_chirho": "TEI Parser Implementation",
+      "priority_chirho": "P1_chirho",
+      "status_chirho": "planned",
+      "description_chirho": "Implement TEI (Text Encoding Initiative) XML parser for importing lexicon/dictionary modules",
+      "requirements_chirho": [
+        "Parse TEI P5 dictionary format",
+        "Support entry, form, sense, and definition elements",
+        "Handle cross-references between entries",
+        "Support multiple language entries",
+        "Generate lexicon module format output"
+      ],
+      "acceptance_criteria_chirho": [
+        "Can parse CrossWire TEI dictionaries",
+        "All dictionary entries accessible via lookup",
+        "Cross-references resolve correctly"
+      ],
+      "dependencies_chirho": ["quick-xml crate already available"],
+      "estimated_files_chirho": [
+        "crates/rsword_chirho/src/import_chirho/tei_parser_chirho.rs"
+      ]
+    },
+    {
+      "id_chirho": "RSWORD-003",
+      "title_chirho": "Async HTTP Transport Option",
+      "priority_chirho": "P2_chirho",
+      "status_chirho": "planned",
+      "description_chirho": "Add async HTTP transport using tokio + reqwest for better performance during module downloads",
+      "requirements_chirho": [
+        "Create AsyncTransportChirho trait",
+        "Implement async module download with progress reporting",
+        "Support concurrent downloads of multiple modules",
+        "Add download cancellation support",
+        "Integrate with existing feature flag system"
+      ],
+      "acceptance_criteria_chirho": [
+        "Can download modules asynchronously",
+        "Progress callbacks work correctly",
+        "Cancellation stops download cleanly"
+      ],
+      "dependencies_chirho": ["reqwest with async feature", "tokio runtime"],
+      "estimated_files_chirho": [
+        "crates/rsword_chirho/src/transport_chirho/async_transport_chirho.rs"
+      ]
+    },
+    {
+      "id_chirho": "RSWORD-004",
+      "title_chirho": "Additional Versification Systems",
+      "priority_chirho": "P2_chirho",
+      "status_chirho": "planned",
+      "description_chirho": "Add support for more versification systems used by various Bible translations",
+      "requirements_chirho": [
+        "Vulgate versification system",
+        "Ethiopian versification system",
+        "German (Luther) versification system",
+        "NRSV versification system",
+        "Leningrad versification system"
+      ],
+      "acceptance_criteria_chirho": [
+        "Each versification correctly maps all books and verses",
+        "Modules using these versifications load correctly",
+        "Cross-versification mapping works"
+      ],
+      "dependencies_chirho": [],
+      "estimated_files_chirho": [
+        "crates/rsword_chirho/src/versification_chirho/canons_chirho/vulgate_chirho.rs",
+        "crates/rsword_chirho/src/versification_chirho/canons_chirho/ethiopian_chirho.rs",
+        "crates/rsword_chirho/src/versification_chirho/canons_chirho/luther_chirho.rs",
+        "crates/rsword_chirho/src/versification_chirho/canons_chirho/nrsv_chirho.rs",
+        "crates/rsword_chirho/src/versification_chirho/canons_chirho/leningrad_chirho.rs"
+      ]
+    },
+    {
+      "id_chirho": "RSWORD-005",
+      "title_chirho": "Parallel Module Loading",
+      "priority_chirho": "P2_chirho",
+      "status_chirho": "planned",
+      "description_chirho": "Use rayon for parallel loading when scanning and initializing multiple modules",
+      "requirements_chirho": [
+        "Parallel config file scanning in SwMgrChirho",
+        "Concurrent module initialization",
+        "Thread-safe module registry",
+        "Configurable parallelism level"
+      ],
+      "acceptance_criteria_chirho": [
+        "Module loading is faster on multi-core systems",
+        "No race conditions or data corruption",
+        "Can disable parallelism via config"
+      ],
+      "dependencies_chirho": ["rayon crate already available as optional"],
+      "estimated_files_chirho": [
+        "crates/rsword_chirho/src/manager_chirho/sw_mgr_chirho.rs"
+      ]
+    },
+    {
+      "id_chirho": "RSWORD-006",
+      "title_chirho": "Enhanced Search with Tantivy",
+      "priority_chirho": "P2_chirho",
+      "status_chirho": "planned",
+      "description_chirho": "Improve search functionality with advanced Tantivy features",
+      "requirements_chirho": [
+        "Phrase searching with slop parameter",
+        "Fuzzy search with configurable edit distance",
+        "Proximity search within N words",
+        "Highlight matched terms in results",
+        "Search result scoring and ranking"
+      ],
+      "acceptance_criteria_chirho": [
+        "All search types return correct results",
+        "Highlighting correctly marks matched terms",
+        "Search performance is acceptable"
+      ],
+      "dependencies_chirho": ["tantivy crate already available"],
+      "estimated_files_chirho": [
+        "crates/rsword_chirho/src/search_chirho/tantivy_chirho.rs",
+        "crates/rsword_chirho/src/search_chirho/highlighter_chirho.rs"
+      ]
+    },
+    {
+      "id_chirho": "RSWORD-007",
+      "title_chirho": "API Documentation",
+      "priority_chirho": "P1_chirho",
+      "status_chirho": "planned",
+      "description_chirho": "Add comprehensive documentation for the public API",
+      "requirements_chirho": [
+        "Doc comments for all public types and functions",
+        "Usage examples in documentation",
+        "Module-level documentation explaining concepts",
+        "README with quickstart guide",
+        "API reference generation with rustdoc"
+      ],
+      "acceptance_criteria_chirho": [
+        "cargo doc builds without warnings",
+        "All public items have doc comments",
+        "Examples in docs compile and run"
+      ],
+      "dependencies_chirho": [],
+      "estimated_files_chirho": [
+        "crates/rsword_chirho/src/lib.rs",
+        "All public modules"
+      ]
+    },
+    {
+      "id_chirho": "RSWORD-008",
+      "title_chirho": "Module Creation Wizard CLI",
+      "priority_chirho": "P3_chirho",
+      "status_chirho": "planned",
+      "description_chirho": "Interactive CLI tool for creating new SWORD modules",
+      "requirements_chirho": [
+        "Interactive prompts for module metadata",
+        "Support for different module types (Bible, commentary, dictionary)",
+        "Automatic versification detection",
+        "Progress reporting during creation",
+        "Validation of input files"
+      ],
+      "acceptance_criteria_chirho": [
+        "Can create valid modules interactively",
+        "Created modules load in SWORD applications",
+        "Error messages are helpful"
+      ],
+      "dependencies_chirho": ["dialoguer or similar TUI crate"],
+      "estimated_files_chirho": [
+        "crates/sword_tools_chirho/src/bin/modwizard_chirho.rs"
+      ]
+    },
+    {
+      "id_chirho": "RSWORD-009",
+      "title_chirho": "Cross-Versification Mapping",
+      "priority_chirho": "P2_chirho",
+      "status_chirho": "planned",
+      "description_chirho": "Map verses between different versification systems",
+      "requirements_chirho": [
+        "Verse mapping tables between versification systems",
+        "Handle split verses (one verse in system A = two verses in system B)",
+        "Handle merged verses (two verses in system A = one verse in system B)",
+        "API for converting verse references between systems"
+      ],
+      "acceptance_criteria_chirho": [
+        "Can map any KJV verse to Catholic/LXX equivalent",
+        "Split/merged verses handled correctly",
+        "No data loss during mapping"
+      ],
+      "dependencies_chirho": [],
+      "estimated_files_chirho": [
+        "crates/rsword_chirho/src/versification_chirho/mapping_chirho.rs"
+      ]
+    },
+    {
+      "id_chirho": "RSWORD-010",
+      "title_chirho": "Module Validation Tool",
+      "priority_chirho": "P3_chirho",
+      "status_chirho": "planned",
+      "description_chirho": "CLI tool to validate SWORD modules for correctness",
+      "requirements_chirho": [
+        "Verify module index files are valid",
+        "Check for missing or corrupt data",
+        "Validate verse coverage",
+        "Report encoding issues",
+        "Suggest fixes for common problems"
+      ],
+      "acceptance_criteria_chirho": [
+        "Detects known module issues",
+        "Provides actionable fix suggestions",
+        "Can validate any SWORD module"
+      ],
+      "dependencies_chirho": [],
+      "estimated_files_chirho": [
+        "crates/sword_tools_chirho/src/bin/modvalidate_chirho.rs"
+      ]
+    }
+  ],
+  "technical_debt_chirho": [
+    {
+      "id_chirho": "DEBT-001",
+      "title_chirho": "Reverse Verse Index Lookup",
+      "description_chirho": "VerseKeyChirho has TODO for implementing reverse lookup from verse index to book/chapter/verse",
+      "location_chirho": "crates/rsword_chirho/src/keys_chirho/verse_key_chirho.rs:575",
+      "priority_chirho": "P2_chirho"
+    }
+  ],
+  "milestones_chirho": [
+    {
+      "name_chirho": "v0.2.0 - Parser Release",
+      "target_date_chirho": "2026-Q1",
+      "features_chirho": ["RSWORD-001", "RSWORD-002", "RSWORD-007"]
+    },
+    {
+      "name_chirho": "v0.3.0 - Enhanced Search",
+      "target_date_chirho": "2026-Q2",
+      "features_chirho": ["RSWORD-005", "RSWORD-006", "RSWORD-009"]
+    },
+    {
+      "name_chirho": "v0.4.0 - Full Feature Parity",
+      "target_date_chirho": "2026-Q3",
+      "features_chirho": ["RSWORD-003", "RSWORD-004", "RSWORD-008", "RSWORD-010"]
+    }
+  ]
+}

@@ -66,6 +66,10 @@ path = "src/bin/vpl2mod_chirho.rs"
 name = "modvalidate_chirho"
 path = "src/bin/modvalidate_chirho.rs"
 
+[[bin]]
+name = "modwizard_chirho"
+path = "src/bin/modwizard_chirho.rs"
+
 [dependencies]
 rsword_chirho.workspace = true
 clap.workspace = true

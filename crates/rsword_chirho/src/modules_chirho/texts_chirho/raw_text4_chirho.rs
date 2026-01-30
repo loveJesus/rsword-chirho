@@ -41,12 +41,11 @@ impl RawText4Chirho {
 
         // Get versification from config or default to KJV
         let v11n_name_chirho = config_chirho.versification_chirho();
-        let v11n_chirho = if v11n_name_chirho == "KJV" {
-            Arc::new(kjv_chirho().clone())
-        } else {
-            // TODO: Support other versification systems
-            Arc::new(kjv_chirho().clone())
-        };
+        let v11n_chirho = Arc::new(
+            crate::versification_chirho::get_versification_chirho(v11n_name_chirho)
+                .unwrap_or_else(|| kjv_chirho())
+                .clone()
+        );
 
         let key_chirho = VerseKeyChirho::with_versification_chirho(v11n_chirho.clone());
 

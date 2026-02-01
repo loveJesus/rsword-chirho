@@ -118,11 +118,16 @@ pub fn extract_interlinear_words_chirho(osis_text_chirho: &str) -> Vec<Interline
             .collect();
         let strongs_chirho = strongs_list_chirho.join(", ");
 
-        // Extract morphology
-        let morphology_chirho = OSIS_MORPH_REGEX_CHIRHO
+        // Extract morphology (strip scheme prefix like "robinson:", "oshm:", etc.)
+        let morphology_raw_chirho = OSIS_MORPH_REGEX_CHIRHO
             .captures(attrs_chirho)
             .map(|c_chirho| c_chirho[1].to_string())
             .unwrap_or_default();
+        let morphology_chirho = morphology_raw_chirho
+            .split(':')
+            .last()
+            .unwrap_or(&morphology_raw_chirho)
+            .to_string();
 
         // Extract transliteration
         let transliteration_chirho = OSIS_XLIT_REGEX_CHIRHO

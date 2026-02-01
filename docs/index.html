@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<!--
+For God so loved the world that he gave his only begotten Son,
+that whoever believes in him should not perish but have eternal life.
+John 3:16
+-->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>rsword_chirho - Pure Rust SWORD Bible Library</title>
+    <meta name="description" content="rsword_chirho is a pure Rust port of the SWORD Bible software library with full binary format compatibility.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --color-rust-chirho: #CE422B;
+            --color-rust-dark-chirho: #a33520;
+            --color-accent-chirho: #F5A623;
+            --color-bg-chirho: #F8F4F0;
+            --color-bg-dark-chirho: #1C1C1C;
+            --color-text-chirho: #2D2D2D;
+            --color-text-light-chirho: #F5F5F5;
+            --color-card-chirho: #FFFFFF;
+            --color-code-bg-chirho: #2b2b2b;
+            --font-serif-chirho: 'Crimson Pro', Georgia, serif;
+            --font-sans-chirho: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            --font-mono-chirho: 'JetBrains Mono', 'Fira Code', monospace;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-sans-chirho);
+            background: var(--color-bg-chirho);
+            color: var(--color-text-chirho);
+            line-height: 1.6;
+        }
+
+        .hero-chirho {
+            background: linear-gradient(135deg, var(--color-bg-dark-chirho) 0%, #2C2C2C 100%);
+            color: var(--color-text-light-chirho);
+            padding: 4rem 2rem;
+            text-align: center;
+            position: relative;
+        }
+
+        .hero-chirho::before {
+            content: '🦀';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 20rem;
+            opacity: 0.03;
+        }
+
+        .hero-content-chirho {
+            position: relative;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .logo-chirho {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        h1 {
+            font-family: var(--font-mono-chirho);
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: var(--color-rust-chirho);
+        }
+
+        .subtitle-chirho {
+            font-size: 1.25rem;
+            opacity: 0.9;
+            margin-bottom: 2rem;
+        }
+
+        .verse-chirho {
+            font-family: var(--font-serif-chirho);
+            font-size: 1rem;
+            font-style: italic;
+            opacity: 0.7;
+            max-width: 500px;
+            margin: 1.5rem auto;
+            padding: 0.75rem;
+            border-left: 3px solid var(--color-rust-chirho);
+            text-align: left;
+        }
+
+        .badges-chirho {
+            display: flex;
+            gap: 0.5rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin: 1.5rem 0;
+        }
+
+        .badges-chirho img {
+            height: 20px;
+        }
+
+        .cta-buttons-chirho {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 2rem;
+        }
+
+        .btn-chirho {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.875rem 1.75rem;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            font-family: var(--font-mono-chirho);
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary-chirho {
+            background: var(--color-rust-chirho);
+            color: white;
+        }
+
+        .btn-primary-chirho:hover {
+            background: var(--color-rust-dark-chirho);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(206, 66, 43, 0.3);
+        }
+
+        .btn-secondary-chirho {
+            background: transparent;
+            color: var(--color-text-light-chirho);
+            border: 2px solid var(--color-rust-chirho);
+        }
+
+        .btn-secondary-chirho:hover {
+            background: rgba(206, 66, 43, 0.1);
+        }
+
+        .section-chirho {
+            padding: 4rem 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .section-title-chirho {
+            font-family: var(--font-mono-chirho);
+            font-size: 1.75rem;
+            color: var(--color-rust-chirho);
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .code-example-chirho {
+            background: var(--color-code-bg-chirho);
+            border-radius: 12px;
+            overflow: hidden;
+            margin: 2rem 0;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+        }
+
+        .code-header-chirho {
+            background: #3b3b3b;
+            padding: 0.75rem 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .code-dot-chirho {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .code-dot-chirho:nth-child(1) { background: #ff5f56; }
+        .code-dot-chirho:nth-child(2) { background: #ffbd2e; }
+        .code-dot-chirho:nth-child(3) { background: #27ca40; }
+
+        .code-title-chirho {
+            color: #888;
+            font-family: var(--font-mono-chirho);
+            font-size: 0.85rem;
+            margin-left: auto;
+        }
+
+        .code-example-chirho pre {
+            padding: 1.5rem;
+            overflow-x: auto;
+            font-family: var(--font-mono-chirho);
+            font-size: 0.9rem;
+            line-height: 1.6;
+            color: #e6e6e6;
+        }
+
+        .code-example-chirho .keyword-chirho { color: #ff7b72; }
+        .code-example-chirho .string-chirho { color: #a5d6ff; }
+        .code-example-chirho .comment-chirho { color: #8b949e; }
+        .code-example-chirho .function-chirho { color: #d2a8ff; }
+        .code-example-chirho .type-chirho { color: #7ee787; }
+
+        .features-grid-chirho {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .feature-card-chirho {
+            background: var(--color-card-chirho);
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            border-left: 4px solid var(--color-rust-chirho);
+        }
+
+        .feature-card-chirho h3 {
+            font-family: var(--font-mono-chirho);
+            font-size: 1rem;
+            color: var(--color-rust-chirho);
+            margin-bottom: 0.5rem;
+        }
+
+        .feature-card-chirho p {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .modules-table-chirho {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 2rem 0;
+            background: var(--color-card-chirho);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .modules-table-chirho th,
+        .modules-table-chirho td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        .modules-table-chirho th {
+            background: var(--color-rust-chirho);
+            color: white;
+            font-family: var(--font-mono-chirho);
+            font-size: 0.85rem;
+        }
+
+        .modules-table-chirho td {
+            font-size: 0.9rem;
+        }
+
+        .modules-table-chirho code {
+            background: #f5f5f5;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-family: var(--font-mono-chirho);
+            font-size: 0.85rem;
+        }
+
+        .cli-section-chirho {
+            background: var(--color-bg-dark-chirho);
+            color: var(--color-text-light-chirho);
+        }
+
+        .cli-section-chirho .section-title-chirho {
+            color: var(--color-rust-chirho);
+        }
+
+        .cli-examples-chirho {
+            display: grid;
+            gap: 1.5rem;
+        }
+
+        .cli-example-chirho {
+            background: #2b2b2b;
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            font-family: var(--font-mono-chirho);
+            font-size: 0.9rem;
+        }
+
+        .cli-example-chirho .prompt-chirho {
+            color: var(--color-rust-chirho);
+        }
+
+        .cli-example-chirho .command-chirho {
+            color: #e6e6e6;
+        }
+
+        .cli-example-chirho .output-chirho {
+            color: #8b949e;
+            margin-top: 0.5rem;
+        }
+
+        .architecture-chirho {
+            background: var(--color-card-chirho);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-top: 2rem;
+        }
+
+        .architecture-chirho pre {
+            font-family: var(--font-mono-chirho);
+            font-size: 0.85rem;
+            line-height: 1.5;
+            color: #666;
+        }
+
+        footer {
+            background: var(--color-bg-dark-chirho);
+            color: var(--color-text-light-chirho);
+            padding: 3rem 2rem;
+            text-align: center;
+        }
+
+        footer a {
+            color: var(--color-rust-chirho);
+        }
+
+        .footer-links-chirho {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .footer-links-chirho a {
+            text-decoration: none;
+            transition: opacity 0.3s;
+        }
+
+        .footer-links-chirho a:hover {
+            opacity: 0.8;
+        }
+
+        .soli-deo-gloria-chirho {
+            font-family: var(--font-serif-chirho);
+            font-style: italic;
+            margin-top: 2rem;
+            opacity: 0.8;
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+
+            .hero-chirho {
+                padding: 3rem 1.5rem;
+            }
+
+            .section-chirho {
+                padding: 3rem 1.5rem;
+            }
+
+            .modules-table-chirho {
+                font-size: 0.8rem;
+            }
+
+            .modules-table-chirho th,
+            .modules-table-chirho td {
+                padding: 0.75rem 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="hero-chirho">
+        <div class="hero-content-chirho">
+            <div class="logo-chirho">🦀📖</div>
+            <h1>rsword_chirho</h1>
+            <p class="subtitle-chirho">Pure Rust Port of the SWORD Bible Software Library</p>
+
+            <div class="badges-chirho">
+                <img src="https://img.shields.io/crates/v/rsword_chirho?style=flat-square&color=CE422B" alt="crates.io">
+                <img src="https://img.shields.io/badge/license-GPL--2.0-blue?style=flat-square" alt="License">
+                <img src="https://img.shields.io/badge/rust-1.70%2B-orange?style=flat-square" alt="Rust">
+            </div>
+
+            <div class="verse-chirho">
+                "For God so loved the world that he gave his only begotten Son,
+                that whoever believes in him should not perish but have eternal life."
+                — John 3:16
+            </div>
+
+            <div class="cta-buttons-chirho">
+                <a href="https://docs.rs/rsword_chirho" class="btn-chirho btn-primary-chirho">
+                    📚 Documentation
+                </a>
+                <a href="https://github.com/loveJesus/rsword-chirho" class="btn-chirho btn-secondary-chirho">
+                    📦 GitHub
+                </a>
+                <a href="https://crates.io/crates/rsword_chirho" class="btn-chirho btn-secondary-chirho">
+                    📦 crates.io
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <section class="section-chirho">
+        <h2 class="section-title-chirho">Quick Start</h2>
+
+        <div class="code-example-chirho">
+            <div class="code-header-chirho">
+                <span class="code-dot-chirho"></span>
+                <span class="code-dot-chirho"></span>
+                <span class="code-dot-chirho"></span>
+                <span class="code-title-chirho">Cargo.toml</span>
+            </div>
+            <pre><span class="comment-chirho"># Add to your Cargo.toml</span>
+[dependencies]
+rsword_chirho = <span class="string-chirho">"0.1"</span></pre>
+        </div>
+
+        <div class="code-example-chirho">
+            <div class="code-header-chirho">
+                <span class="code-dot-chirho"></span>
+                <span class="code-dot-chirho"></span>
+                <span class="code-dot-chirho"></span>
+                <span class="code-title-chirho">main.rs</span>
+            </div>
+            <pre><span class="keyword-chirho">use</span> rsword_chirho::{<span class="type-chirho">SwMgrChirho</span>, <span class="type-chirho">VerseKeyChirho</span>};
+
+<span class="keyword-chirho">fn</span> <span class="function-chirho">main_chirho</span>() -> <span class="type-chirho">Result</span>&lt;(), <span class="type-chirho">Box</span>&lt;<span class="keyword-chirho">dyn</span> std::error::<span class="type-chirho">Error</span>&gt;&gt; {
+    <span class="comment-chirho">// Load modules from system paths (~/.sword, /usr/share/sword, etc.)</span>
+    <span class="keyword-chirho">let</span> mgr_chirho = <span class="type-chirho">SwMgrChirho</span>::<span class="function-chirho">with_system_paths_chirho</span>()?;
+
+    <span class="comment-chirho">// List available modules</span>
+    <span class="keyword-chirho">for</span> name_chirho <span class="keyword-chirho">in</span> mgr_chirho.<span class="function-chirho">get_module_names_chirho</span>() {
+        <span class="function-chirho">println!</span>(<span class="string-chirho">"Found module: {}"</span>, name_chirho);
+    }
+
+    <span class="comment-chirho">// Get a Bible module and look up a verse</span>
+    <span class="keyword-chirho">if let</span> <span class="type-chirho">Some</span>(<span class="keyword-chirho">mut</span> module_chirho) = mgr_chirho.<span class="function-chirho">get_module_driver_chirho</span>(<span class="string-chirho">"KJV"</span>)? {
+        <span class="keyword-chirho">let</span> key_chirho = <span class="type-chirho">VerseKeyChirho</span>::<span class="function-chirho">from_str_chirho</span>(<span class="string-chirho">"John 3:16"</span>)?;
+        module_chirho.<span class="function-chirho">set_key_chirho</span>(&key_chirho)?;
+        <span class="keyword-chirho">let</span> text_chirho = module_chirho.<span class="function-chirho">get_raw_entry_chirho</span>()?;
+        <span class="function-chirho">println!</span>(<span class="string-chirho">"{}: {}"</span>, key_chirho, text_chirho);
+    }
+
+    <span class="type-chirho">Ok</span>(())
+}</pre>
+        </div>
+    </section>
+
+    <section class="section-chirho">
+        <h2 class="section-title-chirho">Features</h2>
+
+        <div class="features-grid-chirho">
+            <div class="feature-card-chirho">
+                <h3>Full Binary Format Support</h3>
+                <p>Complete compatibility with SWORD module binary formats: RawText, RawText4, zText, RawCom, zCom, RawLD, zLD, RawGenBook.</p>
+            </div>
+
+            <div class="feature-card-chirho">
+                <h3>Compression Support</h3>
+                <p>Built-in support for zlib, bzip2, and xz/lzma compression formats used by modern SWORD modules.</p>
+            </div>
+
+            <div class="feature-card-chirho">
+                <h3>Versification Systems</h3>
+                <p>KJV, Catholic, LXX, Vulgate, Luther, Synodal, NRSV, Leningrad, and Ethiopian verse numbering systems.</p>
+            </div>
+
+            <div class="feature-card-chirho">
+                <h3>Full-Text Search</h3>
+                <p>Tantivy-powered search with Boolean operators, wildcards, fuzzy matching, and phrase search.</p>
+            </div>
+
+            <div class="feature-card-chirho">
+                <h3>Markup Filters</h3>
+                <p>Convert OSIS, ThML, and GBF markup to HTML or plain text. Extract Strong's numbers, morphology, footnotes.</p>
+            </div>
+
+            <div class="feature-card-chirho">
+                <h3>Module Management</h3>
+                <p>Install modules from CrossWire and other SWORD repositories. List, update, and remove modules.</p>
+            </div>
+
+            <div class="feature-card-chirho">
+                <h3>CLI Tools</h3>
+                <p>Drop-in replacements for diatheke, installmgr, osis2mod, and other SWORD command-line utilities.</p>
+            </div>
+
+            <div class="feature-card-chirho">
+                <h3>Pure Rust</h3>
+                <p>No C++ dependencies. Cross-compiles to any target Rust supports. WebAssembly ready.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="section-chirho">
+        <h2 class="section-title-chirho">Module Format Support</h2>
+
+        <table class="modules-table-chirho">
+            <thead>
+                <tr>
+                    <th>Type</th>
+                    <th>Driver</th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Biblical Texts</td>
+                    <td><code>RawTextChirho</code>, <code>ZTextChirho</code></td>
+                    <td>Bible translations with verse-keyed access</td>
+                </tr>
+                <tr>
+                    <td>Commentaries</td>
+                    <td><code>RawComChirho</code>, <code>ZComChirho</code></td>
+                    <td>Verse-keyed commentary content</td>
+                </tr>
+                <tr>
+                    <td>Lexicons</td>
+                    <td><code>RawLdChirho</code>, <code>ZLdChirho</code></td>
+                    <td>Dictionaries, Strong's concordances</td>
+                </tr>
+                <tr>
+                    <td>General Books</td>
+                    <td><code>RawGenBookChirho</code></td>
+                    <td>Tree-structured content</td>
+                </tr>
+                <tr>
+                    <td>Daily Devotional</td>
+                    <td><code>DailyDevotionalChirho</code></td>
+                    <td>Date-keyed devotional readings</td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <section class="section-chirho cli-section-chirho">
+        <h2 class="section-title-chirho">CLI Tools</h2>
+
+        <div class="cli-examples-chirho">
+            <div class="cli-example-chirho">
+                <div><span class="prompt-chirho">$</span> <span class="command-chirho">diatheke_chirho -b KJV -k "John 3:16"</span></div>
+                <div class="output-chirho">John 3:16: For God so loved the world, that he gave his only begotten Son...</div>
+            </div>
+
+            <div class="cli-example-chirho">
+                <div><span class="prompt-chirho">$</span> <span class="command-chirho">diatheke_chirho -b KJV -s phrase -k "love"</span></div>
+                <div class="output-chirho"># Search for "love" in KJV module</div>
+            </div>
+
+            <div class="cli-example-chirho">
+                <div><span class="prompt-chirho">$</span> <span class="command-chirho">installmgr_chirho -rl CrossWire</span></div>
+                <div class="output-chirho"># List available modules from CrossWire repository</div>
+            </div>
+
+            <div class="cli-example-chirho">
+                <div><span class="prompt-chirho">$</span> <span class="command-chirho">installmgr_chirho -ri CrossWire KJV</span></div>
+                <div class="output-chirho"># Install KJV module from CrossWire</div>
+            </div>
+        </div>
+    </section>
+
+    <section class="section-chirho">
+        <h2 class="section-title-chirho">Architecture</h2>
+
+        <div class="architecture-chirho">
+            <pre>
+rsword_chirho/
+├── keys_chirho/          # Key types (VerseKey, TreeKey, StrKey, DateKey)
+├── versification_chirho/ # Verse systems (KJV, Catholic, LXX, etc.)
+├── modules_chirho/       # Module drivers (RawText, zText, RawLD, etc.)
+├── storage_chirho/       # Binary format handlers (RawVerse, ZVerse)
+├── compression_chirho/   # Compression (zlib, bzip2, xz)
+├── filters_chirho/       # Markup filters (OSIS, ThML, GBF → HTML/plain)
+├── search_chirho/        # Search engines (Tantivy, Regex)
+├── manager_chirho/       # Module & Install managers
+├── transport_chirho/     # FTP/HTTP for module downloads
+├── import_chirho/        # OSIS/TEI/IMP parsers
+└── locale_chirho/        # Internationalization
+            </pre>
+        </div>
+
+        <div class="code-example-chirho" style="margin-top: 2rem;">
+            <div class="code-header-chirho">
+                <span class="code-dot-chirho"></span>
+                <span class="code-dot-chirho"></span>
+                <span class="code-dot-chirho"></span>
+                <span class="code-title-chirho">Module Loading Pipeline</span>
+            </div>
+            <pre><span class="comment-chirho">// .conf file → ModuleConfigChirho → ModuleFactory → SwModule</span>
+<span class="comment-chirho">//                                         ↓</span>
+<span class="comment-chirho">//                     storage_chirho (RawVerse/ZVerse/RawStr)</span>
+<span class="comment-chirho">//                                         ↓</span>
+<span class="comment-chirho">//                     SwModuleChirho trait (read/iterate/search)</span></pre>
+        </div>
+    </section>
+
+    <section class="section-chirho" style="text-align: center;">
+        <h2 class="section-title-chirho">Related Projects</h2>
+
+        <div style="display: flex; justify-content: center; gap: 2rem; flex-wrap: wrap; margin-top: 2rem;">
+            <a href="https://codex-lux-chirho.bible.systems" class="btn-chirho btn-primary-chirho" style="font-family: var(--font-sans-chirho);">
+                📖 Codex Lux Chirho
+            </a>
+            <a href="https://crosswire.org/sword" class="btn-chirho btn-secondary-chirho" style="color: var(--color-text-chirho); border-color: var(--color-text-chirho); font-family: var(--font-sans-chirho);">
+                ⚔️ SWORD Project
+            </a>
+        </div>
+    </section>
+
+    <footer>
+        <div class="footer-links-chirho">
+            <a href="https://github.com/loveJesus/rsword-chirho">GitHub Repository</a>
+            <a href="https://docs.rs/rsword_chirho">API Documentation</a>
+            <a href="https://crates.io/crates/rsword_chirho">crates.io</a>
+            <a href="https://github.com/loveJesus/rsword-chirho/issues">Report Issues</a>
+            <a href="https://github.com/loveJesus/rsword-chirho/blob/main/LICENSE">GPL-2.0 License</a>
+        </div>
+
+        <p>Built with 🦀 Rust and ❤️ for the Word of God</p>
+
+        <p class="soli-deo-gloria-chirho">Soli Deo Gloria</p>
+    </footer>
+</body>
+</html>

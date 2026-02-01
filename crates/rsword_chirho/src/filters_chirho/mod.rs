@@ -93,7 +93,7 @@ mod strongs_filter_chirho;
 mod footnotes_filter_chirho;
 mod redletter_filter_chirho;
 
-pub use osis_chirho::{OsisToHtmlFilterChirho, OsisToPlainFilterChirho};
+pub use osis_chirho::{OsisToHtmlFilterChirho, OsisToPlainFilterChirho, InterlinearWordDataChirho, extract_interlinear_words_chirho};
 pub use thml_chirho::{ThmlToHtmlFilterChirho, ThmlToPlainFilterChirho};
 pub use gbf_chirho::{GbfToHtmlFilterChirho, GbfToPlainFilterChirho};
 pub use tei_filter_chirho::{TeiToHtmlFilterChirho, TeiToPlainFilterChirho};

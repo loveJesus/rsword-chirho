@@ -169,6 +169,7 @@ pub use filters_chirho::{
     OsisToHtmlFilterChirho, OsisToPlainFilterChirho,
     ThmlToHtmlFilterChirho, ThmlToPlainFilterChirho,
     GbfToHtmlFilterChirho, GbfToPlainFilterChirho,
+    InterlinearWordDataChirho, extract_interlinear_words_chirho,
 };
 pub use locale_chirho::{
     LocaleChirho, LocaleBookChirho, LocaleManagerChirho,

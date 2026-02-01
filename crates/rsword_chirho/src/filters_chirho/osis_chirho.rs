@@ -38,7 +38,6 @@ static OSIS_JESUS_WORDS_REGEX_CHIRHO: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r#"<q who="Jesus"[^>]*>(.*?)</q>"#).unwrap()
 });
 
-#[allow(dead_code)]
 static OSIS_LEMMA_REGEX_CHIRHO: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r#"lemma="([^"]*)""#).unwrap()
 });
@@ -50,6 +49,155 @@ static OSIS_STRONGS_REGEX_CHIRHO: LazyLock<Regex> = LazyLock::new(|| {
 static OSIS_MORPH_REGEX_CHIRHO: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r#"morph="([^"]*)""#).unwrap()
 });
+
+static OSIS_GLOSS_REGEX_CHIRHO: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r#"gloss="([^"]*)""#).unwrap()
+});
+
+static OSIS_XLIT_REGEX_CHIRHO: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r#"xlit="([^"]*)""#).unwrap()
+});
+
+/// Interlinear word data extracted from OSIS markup.
+///
+/// Represents a single word with its original text, transliteration,
+/// morphology, Strong's numbers, and gloss (English meaning).
+#[derive(Debug, Clone, Default)]
+pub struct InterlinearWordDataChirho {
+    /// Original word text (Hebrew/Greek).
+    pub original_chirho: String,
+    /// Transliteration (Latin characters).
+    pub transliteration_chirho: String,
+    /// Morphology code (e.g., "V-AAI-3S").
+    pub morphology_chirho: String,
+    /// Strong's number(s) (e.g., "H430", "G2316").
+    pub strongs_chirho: String,
+    /// English gloss/meaning.
+    pub gloss_chirho: String,
+    /// Part of speech extracted from morphology.
+    pub part_of_speech_chirho: String,
+    /// True if Hebrew (H prefix), false if Greek (G prefix).
+    pub is_hebrew_chirho: bool,
+    /// Lemma (dictionary form).
+    pub lemma_chirho: String,
+}
+
+/// Extract interlinear word data from OSIS text.
+///
+/// Parses `<w>` elements with their attributes (lemma, morph, gloss, xlit)
+/// and returns a vector of word data for interlinear display.
+///
+/// # Example
+///
+/// ```rust
+/// use rsword_chirho::filters_chirho::extract_interlinear_words_chirho;
+///
+/// let osis_chirho = r#"<w lemma="strong:H7225" morph="oshm:HNcfsa" gloss="In [the] beginning">בְּרֵאשִׁית</w>"#;
+/// let words_chirho = extract_interlinear_words_chirho(osis_chirho);
+/// assert_eq!(words_chirho.len(), 1);
+/// assert_eq!(words_chirho[0].gloss_chirho, "In [the] beginning");
+/// assert_eq!(words_chirho[0].strongs_chirho, "H7225");
+/// ```
+pub fn extract_interlinear_words_chirho(osis_text_chirho: &str) -> Vec<InterlinearWordDataChirho> {
+    let mut words_chirho = Vec::new();
+
+    for cap_chirho in OSIS_WORD_REGEX_CHIRHO.captures_iter(osis_text_chirho) {
+        let attrs_chirho = &cap_chirho[1];
+        let word_text_chirho = &cap_chirho[2];
+
+        // Extract gloss (English meaning)
+        let gloss_chirho = OSIS_GLOSS_REGEX_CHIRHO
+            .captures(attrs_chirho)
+            .map(|c_chirho| c_chirho[1].to_string())
+            .unwrap_or_default();
+
+        // Extract Strong's numbers
+        let strongs_list_chirho: Vec<String> = OSIS_STRONGS_REGEX_CHIRHO
+            .captures_iter(attrs_chirho)
+            .map(|c_chirho| c_chirho[1].to_string())
+            .collect();
+        let strongs_chirho = strongs_list_chirho.join(", ");
+
+        // Extract morphology
+        let morphology_chirho = OSIS_MORPH_REGEX_CHIRHO
+            .captures(attrs_chirho)
+            .map(|c_chirho| c_chirho[1].to_string())
+            .unwrap_or_default();
+
+        // Extract transliteration
+        let transliteration_chirho = OSIS_XLIT_REGEX_CHIRHO
+            .captures(attrs_chirho)
+            .map(|c_chirho| c_chirho[1].to_string())
+            .unwrap_or_default();
+
+        // Extract lemma
+        let lemma_chirho = OSIS_LEMMA_REGEX_CHIRHO
+            .captures(attrs_chirho)
+            .map(|c_chirho| c_chirho[1].to_string())
+            .unwrap_or_default();
+
+        // Determine if Hebrew (H prefix) or Greek (G prefix)
+        let is_hebrew_chirho = strongs_list_chirho
+            .first()
+            .map(|s_chirho| s_chirho.starts_with('H'))
+            .unwrap_or(false);
+
+        // Extract part of speech from morphology
+        let part_of_speech_chirho = if !morphology_chirho.is_empty() {
+            extract_pos_from_morph_chirho(&morphology_chirho)
+        } else {
+            String::new()
+        };
+
+        words_chirho.push(InterlinearWordDataChirho {
+            original_chirho: word_text_chirho.to_string(),
+            transliteration_chirho,
+            morphology_chirho,
+            strongs_chirho,
+            gloss_chirho,
+            part_of_speech_chirho,
+            is_hebrew_chirho,
+            lemma_chirho,
+        });
+    }
+
+    words_chirho
+}
+
+/// Extract part of speech from morphology code.
+fn extract_pos_from_morph_chirho(morph_chirho: &str) -> String {
+    // Handle Robinson morphology (Greek): V-AAI-3S, N-NSM, etc.
+    // Handle OSHM morphology (Hebrew): HNcfsa, HVqp3ms, etc.
+    let code_chirho = morph_chirho.split(':').last().unwrap_or(morph_chirho);
+
+    if code_chirho.starts_with('V') || code_chirho.contains("Vq") || code_chirho.contains("Vh") {
+        "Verb".to_string()
+    } else if code_chirho.starts_with('N') || code_chirho.starts_with("HN") {
+        "Noun".to_string()
+    } else if code_chirho.starts_with('A') || code_chirho.starts_with("HA") {
+        "Adjective".to_string()
+    } else if code_chirho.starts_with('P') || code_chirho.starts_with("HP") {
+        if code_chirho.contains("prep") || code_chirho.starts_with("PREP") {
+            "Preposition".to_string()
+        } else {
+            "Pronoun".to_string()
+        }
+    } else if code_chirho.contains("Conj") || code_chirho.starts_with('C') || code_chirho.starts_with("HC") {
+        "Conjunction".to_string()
+    } else if code_chirho.contains("Adv") || code_chirho.starts_with("ADV") {
+        "Adverb".to_string()
+    } else if code_chirho.contains("Art") || code_chirho.starts_with("T") {
+        "Article".to_string()
+    } else if code_chirho.contains("Part") || code_chirho.starts_with("PRT") {
+        "Particle".to_string()
+    } else if code_chirho.contains("Intj") || code_chirho.starts_with("INJ") {
+        "Interjection".to_string()
+    } else if !code_chirho.is_empty() {
+        code_chirho.chars().take(4).collect()
+    } else {
+        String::new()
+    }
+}
 
 /// Convert OSIS markup to HTML.
 pub struct OsisToHtmlFilterChirho {

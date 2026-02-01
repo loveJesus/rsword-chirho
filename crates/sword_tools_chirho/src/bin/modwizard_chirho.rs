@@ -644,12 +644,11 @@ fn main() -> Result<()> {
 
     show_summary_chirho(&config_chirho);
 
-    if !args_chirho.non_interactive_chirho {
-        if !prompt_yn_chirho("Proceed with module creation", true)? {
+    if !args_chirho.non_interactive_chirho
+        && !prompt_yn_chirho("Proceed with module creation", true)? {
             println!("Aborted.");
             return Ok(());
         }
-    }
 
     create_module_chirho(&config_chirho)?;
 

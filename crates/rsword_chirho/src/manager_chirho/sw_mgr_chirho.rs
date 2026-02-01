@@ -18,6 +18,7 @@ use super::module_factory_chirho::{LoadedModuleChirho, load_module_chirho};
 
 /// Configuration for the module manager.
 #[derive(Debug, Clone)]
+#[derive(Default)]
 pub struct SwMgrConfigChirho {
     /// Enable parallel loading of modules.
     pub parallel_chirho: bool,
@@ -25,14 +26,6 @@ pub struct SwMgrConfigChirho {
     pub num_threads_chirho: usize,
 }
 
-impl Default for SwMgrConfigChirho {
-    fn default() -> Self {
-        Self {
-            parallel_chirho: cfg!(feature = "parallel"),
-            num_threads_chirho: 0, // Auto-detect
-        }
-    }
-}
 
 /// SWORD module manager.
 ///

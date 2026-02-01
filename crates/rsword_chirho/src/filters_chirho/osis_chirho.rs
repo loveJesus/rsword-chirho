@@ -168,7 +168,7 @@ pub fn extract_interlinear_words_chirho(osis_text_chirho: &str) -> Vec<Interline
 fn extract_pos_from_morph_chirho(morph_chirho: &str) -> String {
     // Handle Robinson morphology (Greek): V-AAI-3S, N-NSM, etc.
     // Handle OSHM morphology (Hebrew): HNcfsa, HVqp3ms, etc.
-    let code_chirho = morph_chirho.split(':').last().unwrap_or(morph_chirho);
+    let code_chirho = morph_chirho.split(':').next_back().unwrap_or(morph_chirho);
 
     if code_chirho.starts_with('V') || code_chirho.contains("Vq") || code_chirho.contains("Vh") {
         "Verb".to_string()

@@ -326,8 +326,8 @@ impl<'a> ModuleValidatorChirho<'a> {
         }
 
         // Check versification for Bible modules
-        if config_chirho.is_bible_chirho() {
-            if config_chirho.versification_chirho() == "KJV" {
+        if config_chirho.is_bible_chirho()
+            && config_chirho.versification_chirho() == "KJV" {
                 result_chirho.add_issue_chirho(
                     ValidationIssueChirho::new_chirho(
                         SeverityChirho::InfoChirho,
@@ -336,7 +336,6 @@ impl<'a> ModuleValidatorChirho<'a> {
                     )
                 );
             }
-        }
 
         if self.verbose_chirho {
             result_chirho.add_issue_chirho(
@@ -467,8 +466,8 @@ impl<'a> ModuleValidatorChirho<'a> {
         for ext_chirho in &expected_extensions_chirho {
             let pattern_chirho = format!("*.{}", ext_chirho);
             if let Ok(mut entries_chirho) = glob::glob(&data_path_chirho.join(&pattern_chirho).to_string_lossy()) {
-                if entries_chirho.next().is_some() {
-                    if self.verbose_chirho {
+                if entries_chirho.next().is_some()
+                    && self.verbose_chirho {
                         result_chirho.add_issue_chirho(
                             ValidationIssueChirho::new_chirho(
                                 SeverityChirho::InfoChirho,
@@ -477,7 +476,6 @@ impl<'a> ModuleValidatorChirho<'a> {
                             )
                         );
                     }
-                }
             }
         }
     }

@@ -194,7 +194,7 @@ impl TransportChirho for UreqTransportChirho {
             .map_err(|e_chirho| ErrorChirho::network_chirho(format!("HTTP request failed: {}", e_chirho)))?;
 
         let status_chirho = response_chirho.status().as_u16();
-        if status_chirho < 200 || status_chirho >= 300 {
+        if !(200..300).contains(&status_chirho) {
             return Err(ErrorChirho::network_chirho(format!("HTTP error: {}", status_chirho)));
         }
 
@@ -212,7 +212,7 @@ impl TransportChirho for UreqTransportChirho {
             .map_err(|e_chirho| ErrorChirho::network_chirho(format!("HTTP request failed: {}", e_chirho)))?;
 
         let status_chirho = response_chirho.status().as_u16();
-        if status_chirho < 200 || status_chirho >= 300 {
+        if !(200..300).contains(&status_chirho) {
             return Err(ErrorChirho::network_chirho(format!("HTTP error: {}", status_chirho)));
         }
 
@@ -228,7 +228,7 @@ impl TransportChirho for UreqTransportChirho {
             .call()
             .map(|r_chirho| {
                 let status_chirho = r_chirho.status().as_u16();
-                status_chirho >= 200 && status_chirho < 300
+                (200..300).contains(&status_chirho)
             })
             .unwrap_or(false)
     }

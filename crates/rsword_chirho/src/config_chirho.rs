@@ -351,6 +351,26 @@ impl InstallSourcesConfigChirho {
         }
     }
 
+    /// Remove a source by caption.
+    /// Returns true if a source was removed, false if not found.
+    pub fn remove_source_chirho(&mut self, caption_chirho: &str) -> bool {
+        let ftp_len_chirho = self.ftp_sources_chirho.len();
+        self.ftp_sources_chirho.retain(|s_chirho| s_chirho.caption_chirho != caption_chirho);
+        if self.ftp_sources_chirho.len() != ftp_len_chirho {
+            return true;
+        }
+
+        let http_len_chirho = self.http_sources_chirho.len();
+        self.http_sources_chirho.retain(|s_chirho| s_chirho.caption_chirho != caption_chirho);
+        if self.http_sources_chirho.len() != http_len_chirho {
+            return true;
+        }
+
+        let https_len_chirho = self.https_sources_chirho.len();
+        self.https_sources_chirho.retain(|s_chirho| s_chirho.caption_chirho != caption_chirho);
+        self.https_sources_chirho.len() != https_len_chirho
+    }
+
     /// Write to a writer.
     pub fn write_to_chirho<W: Write>(&self, writer_chirho: &mut W) -> ResultChirho<()> {
         writeln!(writer_chirho, "[Install]")?;

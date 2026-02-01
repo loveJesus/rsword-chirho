@@ -157,6 +157,7 @@ pub use modules_chirho::sw_module_chirho::SwModuleChirho;
 pub use modules_chirho::texts_chirho::RawTextChirho;
 pub use manager_chirho::sw_mgr_chirho::SwMgrChirho;
 pub use manager_chirho::install_mgr_chirho::InstallMgrChirho;
+pub use config_chirho::InstallSourceChirho;
 pub use versification_chirho::{
     VersificationChirho, TestamentChirho, BookInfoChirho,
     kjv_chirho, catholic_chirho, lxx_chirho, synodal_chirho, get_versification_chirho,

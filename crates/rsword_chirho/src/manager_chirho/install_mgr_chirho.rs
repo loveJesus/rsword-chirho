@@ -88,6 +88,12 @@ impl InstallMgrChirho {
         self.sources_chirho.add_source_chirho(source_chirho);
     }
 
+    /// Remove an install source by caption.
+    /// Returns true if a source was removed, false if not found.
+    pub fn remove_source_chirho(&mut self, caption_chirho: &str) -> bool {
+        self.sources_chirho.remove_source_chirho(caption_chirho)
+    }
+
     /// Find a source by name.
     pub fn find_source_chirho(&self, name_chirho: &str) -> Option<&InstallSourceChirho> {
         self.sources_chirho.find_by_caption_chirho(name_chirho)

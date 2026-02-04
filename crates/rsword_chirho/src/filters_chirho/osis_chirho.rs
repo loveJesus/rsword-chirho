@@ -18,6 +18,11 @@ static OSIS_WORD_REGEX_CHIRHO: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r#"<w\s+([^>]*)>(.*?)</w>"#).unwrap()
 });
 
+// Self-closing word tags like <w lemma="..." /> that have no content
+static OSIS_WORD_SELF_CLOSING_REGEX_CHIRHO: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r#"<w\s+[^>]*/>"#).unwrap()
+});
+
 static OSIS_NOTE_REGEX_CHIRHO: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r#"<note[^>]*>(.*?)</note>"#).unwrap()
 });
@@ -284,6 +289,11 @@ impl FilterChirho for OsisToHtmlFilterChirho {
     fn process_chirho(&self, text_chirho: &str) -> ResultChirho<String> {
         let mut result_chirho = text_chirho.to_string();
 
+        // Remove self-closing word tags first (e.g., <w lemma="..." />)
+        result_chirho = OSIS_WORD_SELF_CLOSING_REGEX_CHIRHO
+            .replace_all(&result_chirho, "")
+            .to_string();
+
         // Process word elements with Strong's/morphology
         result_chirho = OSIS_WORD_REGEX_CHIRHO
             .replace_all(&result_chirho, |caps_chirho: &regex::Captures| {
@@ -405,6 +415,12 @@ impl Default for OsisToPlainFilterChirho {
 impl FilterChirho for OsisToPlainFilterChirho {
     fn process_chirho(&self, text_chirho: &str) -> ResultChirho<String> {
         let mut result_chirho = text_chirho.to_string();
+
+        // Remove self-closing word tags first (e.g., <w lemma="..." />)
+        // These are empty word markers used in some modules and contain no displayable content
+        result_chirho = OSIS_WORD_SELF_CLOSING_REGEX_CHIRHO
+            .replace_all(&result_chirho, "")
+            .to_string();
 
         // Process word elements - extract text, optionally add Strong's
         result_chirho = OSIS_WORD_REGEX_CHIRHO

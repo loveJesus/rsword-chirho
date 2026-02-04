@@ -22,6 +22,7 @@ use crate::modules_chirho::{
     RawTextChirho, RawText4Chirho, ZTextChirho, ZText4Chirho,
     RawComChirho, RawCom4Chirho, ZComChirho, ZCom4Chirho,
     RawLdChirho, RawLd4Chirho, ZLdChirho, ZLd4Chirho,
+    RawGenBookChirho,
 };
 use crate::MarkupChirho;
 
@@ -323,6 +324,160 @@ impl LoadedModuleChirho {
                 _ => MarkupChirho::UnknownChirho,
             })
             .unwrap_or(MarkupChirho::UnknownChirho)
+    }
+
+    /// Read all verses for a chapter in batch (more efficient than read_entry_chirho per verse).
+    ///
+    /// This creates a single module driver instance and reuses it for all verses,
+    /// which is significantly faster than calling read_entry_chirho for each verse.
+    ///
+    /// # Arguments
+    /// * `book_chirho` - Book name (e.g., "Genesis", "John")
+    /// * `chapter_chirho` - Chapter number (1-based)
+    /// * `max_verses_chirho` - Maximum number of verses to read (safety limit)
+    ///
+    /// # Returns
+    /// Vector of (verse_number, text) tuples
+    pub fn read_chapter_batch_chirho(
+        &self,
+        book_chirho: &str,
+        chapter_chirho: u32,
+        max_verses_chirho: u32,
+    ) -> ResultChirho<Vec<(u32, String)>> {
+        match self.driver_type_chirho {
+            ModuleDriverTypeChirho::RawTextChirho => {
+                let mut module_chirho = RawTextChirho::new_chirho(
+                    &self.data_path_chirho,
+                    self.config_chirho.clone(),
+                )?;
+                Self::read_chapter_from_bible_module_chirho(
+                    &mut module_chirho,
+                    book_chirho,
+                    chapter_chirho,
+                    max_verses_chirho,
+                )
+            }
+            ModuleDriverTypeChirho::RawText4Chirho => {
+                let mut module_chirho = RawText4Chirho::new_chirho(
+                    &self.data_path_chirho,
+                    self.config_chirho.clone(),
+                )?;
+                Self::read_chapter_from_bible_module_chirho(
+                    &mut module_chirho,
+                    book_chirho,
+                    chapter_chirho,
+                    max_verses_chirho,
+                )
+            }
+            ModuleDriverTypeChirho::ZTextChirho => {
+                let mut module_chirho = ZTextChirho::new_chirho(
+                    &self.data_path_chirho,
+                    self.config_chirho.clone(),
+                )?;
+                Self::read_chapter_from_bible_module_chirho(
+                    &mut module_chirho,
+                    book_chirho,
+                    chapter_chirho,
+                    max_verses_chirho,
+                )
+            }
+            ModuleDriverTypeChirho::ZText4Chirho => {
+                let mut module_chirho = ZText4Chirho::new_chirho(
+                    &self.data_path_chirho,
+                    self.config_chirho.clone(),
+                )?;
+                Self::read_chapter_from_bible_module_chirho(
+                    &mut module_chirho,
+                    book_chirho,
+                    chapter_chirho,
+                    max_verses_chirho,
+                )
+            }
+            _ => {
+                // Fall back to single verse reading for non-Bible modules
+                let mut verses_chirho = Vec::new();
+                for verse_num_chirho in 1..=max_verses_chirho {
+                    let ref_str_chirho = format!("{} {}:{}", book_chirho, chapter_chirho, verse_num_chirho);
+                    match self.read_entry_chirho(&ref_str_chirho) {
+                        Ok(text_chirho) if !text_chirho.trim().is_empty() => {
+                            verses_chirho.push((verse_num_chirho, text_chirho));
+                        }
+                        _ => {
+                            // Stop if we hit empty verses
+                            if verse_num_chirho > 1 {
+                                break;
+                            }
+                        }
+                    }
+                }
+                Ok(verses_chirho)
+            }
+        }
+    }
+
+    /// Helper function to read chapter from a Bible module using SwModuleChirho trait.
+    fn read_chapter_from_bible_module_chirho(
+        module_chirho: &mut dyn SwModuleChirho,
+        book_chirho: &str,
+        chapter_chirho: u32,
+        max_verses_chirho: u32,
+    ) -> ResultChirho<Vec<(u32, String)>> {
+        let mut verses_chirho = Vec::new();
+        let mut consecutive_empty_chirho = 0;
+        let mut last_text_chirho: Option<String> = None;
+
+        for verse_num_chirho in 1..=max_verses_chirho {
+            let ref_str_chirho = format!("{} {}:{}", book_chirho, chapter_chirho, verse_num_chirho);
+
+            // Parse and set key
+            let key_chirho = crate::keys_chirho::verse_key_chirho::VerseKeyChirho::from_str_chirho(&ref_str_chirho)?;
+            module_chirho.set_key_chirho(&key_chirho)?;
+
+            match module_chirho.get_raw_entry_chirho() {
+                Ok(text_chirho) if !text_chirho.trim().is_empty() => {
+                    // Check for duplicate content (indicates we've gone past valid verses)
+                    if let Some(ref last_chirho) = last_text_chirho {
+                        if text_chirho.trim() == last_chirho.trim() {
+                            consecutive_empty_chirho += 1;
+                            if consecutive_empty_chirho >= 2 {
+                                break;
+                            }
+                            continue;
+                        }
+                    }
+                    consecutive_empty_chirho = 0;
+                    last_text_chirho = Some(text_chirho.clone());
+                    verses_chirho.push((verse_num_chirho, text_chirho));
+                }
+                _ => {
+                    consecutive_empty_chirho += 1;
+                    if consecutive_empty_chirho >= 2 || verse_num_chirho > 1 {
+                        break;
+                    }
+                }
+            }
+        }
+
+        Ok(verses_chirho)
+    }
+
+    /// Get a RawGenBook instance for this module if it's a general book.
+    /// Returns None if this is not a general book module.
+    pub fn as_genbook_chirho(&self) -> Option<RawGenBookChirho> {
+        match self.driver_type_chirho {
+            ModuleDriverTypeChirho::RawGenBookChirho => {
+                // Get the DataPath from config
+                let data_path_chirho = self.config_chirho.get_chirho("DataPath")
+                    .unwrap_or("");
+                let basename_chirho = std::path::Path::new(data_path_chirho)
+                    .file_stem()
+                    .and_then(|s| s.to_str())
+                    .unwrap_or(&self.name_chirho);
+
+                RawGenBookChirho::open_chirho(&self.data_path_chirho, basename_chirho).ok()
+            }
+            _ => None,
+        }
     }
 }
 

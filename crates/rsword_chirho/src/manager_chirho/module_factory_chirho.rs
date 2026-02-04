@@ -468,17 +468,22 @@ impl LoadedModuleChirho {
     /// Returns None if this is not a general book module.
     /// Supports both RawGenBook and zGenBook module types.
     pub fn as_genbook_chirho(&self) -> Option<GenBookWrapperChirho> {
-        // Get the DataPath from config
-        let data_path_chirho = self.config_chirho.get_chirho("DataPath")
-            .unwrap_or("");
-        let basename_chirho = std::path::Path::new(data_path_chirho)
-            .file_stem()
+        // For genbook modules, DataPath typically ends with the basename
+        // e.g., "./modules/genbook/rawgenbook/josephus/josephus"
+        // We need: directory = parent of data_path, basename = file_stem of data_path
+        let basename_chirho = self.data_path_chirho
+            .file_name()
             .and_then(|s| s.to_str())
             .unwrap_or(&self.name_chirho);
 
+        // The directory is the parent of data_path_chirho
+        let dir_path_chirho = self.data_path_chirho
+            .parent()
+            .unwrap_or(&self.data_path_chirho);
+
         match self.driver_type_chirho {
             ModuleDriverTypeChirho::RawGenBookChirho => {
-                RawGenBookChirho::open_chirho(&self.data_path_chirho, basename_chirho)
+                RawGenBookChirho::open_chirho(dir_path_chirho, basename_chirho)
                     .ok()
                     .map(GenBookWrapperChirho::RawChirho)
             }
@@ -491,7 +496,7 @@ impl LoadedModuleChirho {
                     Some("XZ") | Some("xz") | Some("LZMA") | Some("lzma") => crate::CompressionTypeChirho::XzChirho,
                     _ => crate::CompressionTypeChirho::ZipChirho, // Default to Zip
                 };
-                ZGenBookChirho::open_chirho(&self.data_path_chirho, basename_chirho, compression_type_chirho)
+                ZGenBookChirho::open_chirho(dir_path_chirho, basename_chirho, compression_type_chirho)
                     .ok()
                     .map(GenBookWrapperChirho::CompressedChirho)
             }

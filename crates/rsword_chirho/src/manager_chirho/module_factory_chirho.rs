@@ -22,7 +22,7 @@ use crate::modules_chirho::{
     RawTextChirho, RawText4Chirho, ZTextChirho, ZText4Chirho,
     RawComChirho, RawCom4Chirho, ZComChirho, ZCom4Chirho,
     RawLdChirho, RawLd4Chirho, ZLdChirho, ZLd4Chirho,
-    RawGenBookChirho,
+    RawGenBookChirho, ZGenBookChirho,
 };
 use crate::MarkupChirho;
 
@@ -67,6 +67,8 @@ pub enum ModuleDriverTypeChirho {
     ZLd4Chirho,
     /// RawGenBook (general book).
     RawGenBookChirho,
+    /// zGenBook (compressed general book).
+    ZGenBookChirho,
     /// Unknown driver.
     UnknownChirho,
 }
@@ -88,6 +90,7 @@ impl ModuleDriverTypeChirho {
             "zLD" => Self::ZLdChirho,
             "zLD4" => Self::ZLd4Chirho,
             "RawGenBook" => Self::RawGenBookChirho,
+            "zGenBook" => Self::ZGenBookChirho,
             _ => Self::UnknownChirho,
         }
     }
@@ -461,22 +464,73 @@ impl LoadedModuleChirho {
         Ok(verses_chirho)
     }
 
-    /// Get a RawGenBook instance for this module if it's a general book.
+    /// Get a genbook wrapper for this module if it's a general book.
     /// Returns None if this is not a general book module.
-    pub fn as_genbook_chirho(&self) -> Option<RawGenBookChirho> {
+    /// Supports both RawGenBook and zGenBook module types.
+    pub fn as_genbook_chirho(&self) -> Option<GenBookWrapperChirho> {
+        // Get the DataPath from config
+        let data_path_chirho = self.config_chirho.get_chirho("DataPath")
+            .unwrap_or("");
+        let basename_chirho = std::path::Path::new(data_path_chirho)
+            .file_stem()
+            .and_then(|s| s.to_str())
+            .unwrap_or(&self.name_chirho);
+
         match self.driver_type_chirho {
             ModuleDriverTypeChirho::RawGenBookChirho => {
-                // Get the DataPath from config
-                let data_path_chirho = self.config_chirho.get_chirho("DataPath")
-                    .unwrap_or("");
-                let basename_chirho = std::path::Path::new(data_path_chirho)
-                    .file_stem()
-                    .and_then(|s| s.to_str())
-                    .unwrap_or(&self.name_chirho);
-
-                RawGenBookChirho::open_chirho(&self.data_path_chirho, basename_chirho).ok()
+                RawGenBookChirho::open_chirho(&self.data_path_chirho, basename_chirho)
+                    .ok()
+                    .map(GenBookWrapperChirho::RawChirho)
+            }
+            ModuleDriverTypeChirho::ZGenBookChirho => {
+                // Get compression type from config, default to Zip
+                let compression_type_chirho = match self.config_chirho.compress_type_chirho() {
+                    Some("ZIP") | Some("Zip") | Some("zip") => crate::CompressionTypeChirho::ZipChirho,
+                    Some("LZSS") | Some("lzss") => crate::CompressionTypeChirho::LzssChirho,
+                    Some("BZIP2") | Some("bzip2") | Some("BZ2") | Some("bz2") => crate::CompressionTypeChirho::Bzip2Chirho,
+                    Some("XZ") | Some("xz") | Some("LZMA") | Some("lzma") => crate::CompressionTypeChirho::XzChirho,
+                    _ => crate::CompressionTypeChirho::ZipChirho, // Default to Zip
+                };
+                ZGenBookChirho::open_chirho(&self.data_path_chirho, basename_chirho, compression_type_chirho)
+                    .ok()
+                    .map(GenBookWrapperChirho::CompressedChirho)
             }
             _ => None,
+        }
+    }
+}
+
+/// Wrapper enum for both RawGenBook and ZGenBook types.
+/// Provides a unified interface for accessing general book content.
+pub enum GenBookWrapperChirho {
+    /// Uncompressed RawGenBook module.
+    RawChirho(RawGenBookChirho),
+    /// Compressed zGenBook module.
+    CompressedChirho(ZGenBookChirho),
+}
+
+impl GenBookWrapperChirho {
+    /// Get root-level keys from the general book.
+    pub fn get_root_keys_chirho(&self) -> Vec<String> {
+        match self {
+            Self::RawChirho(gb_chirho) => gb_chirho.get_root_keys_chirho(),
+            Self::CompressedChirho(gb_chirho) => gb_chirho.get_root_keys_chirho(),
+        }
+    }
+
+    /// Get children of a specific key.
+    pub fn get_children_chirho(&self, key_chirho: &str) -> Vec<String> {
+        match self {
+            Self::RawChirho(gb_chirho) => gb_chirho.get_children_chirho(key_chirho),
+            Self::CompressedChirho(gb_chirho) => gb_chirho.get_children_chirho(key_chirho),
+        }
+    }
+
+    /// Read an entry by key.
+    pub fn read_entry_chirho(&mut self, key_chirho: &str) -> ResultChirho<Option<String>> {
+        match self {
+            Self::RawChirho(gb_chirho) => gb_chirho.read_entry_chirho(key_chirho),
+            Self::CompressedChirho(gb_chirho) => gb_chirho.read_entry_chirho(key_chirho),
         }
     }
 }
@@ -621,7 +675,8 @@ pub fn create_module_chirho(
         | ModuleDriverTypeChirho::ZComChirho
         | ModuleDriverTypeChirho::ZCom4Chirho
         | ModuleDriverTypeChirho::ZLdChirho
-        | ModuleDriverTypeChirho::ZLd4Chirho => {
+        | ModuleDriverTypeChirho::ZLd4Chirho
+        | ModuleDriverTypeChirho::ZGenBookChirho => {
             return Err(ErrorChirho::generic_chirho(
                 "Creating compressed modules directly is not supported. Create a raw module and use mod2zmod to compress.".to_string()
             ));

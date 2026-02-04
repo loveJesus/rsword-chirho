@@ -218,7 +218,7 @@ impl ModuleConfigChirho {
 
     /// Check if this is a general book module.
     pub fn is_genbook_chirho(&self) -> bool {
-        matches!(self.module_driver_chirho(), Some("RawGenBook"))
+        matches!(self.module_driver_chirho(), Some("RawGenBook") | Some("zGenBook"))
     }
 
     /// Write the configuration to a writer.

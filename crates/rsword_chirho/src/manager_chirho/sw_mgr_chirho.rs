@@ -10,6 +10,8 @@ use std::path::{Path, PathBuf};
 #[cfg(feature = "parallel")]
 use std::sync::{Arc, Mutex};
 
+// walkdir is only available on native platforms
+#[cfg(feature = "native")]
 use walkdir::WalkDir;
 
 use crate::config_chirho::ModuleConfigChirho;
@@ -131,6 +133,10 @@ impl SwMgrChirho {
     }
 
     /// Load all modules from configured paths.
+    ///
+    /// On native platforms, this scans the filesystem for module configuration files.
+    /// On WASM, modules must be pre-registered using `register_module_chirho`.
+    #[cfg(feature = "native")]
     pub fn load_modules_chirho(&mut self) -> ResultChirho<()> {
         self.modules_chirho.clear();
 
@@ -147,8 +153,23 @@ impl SwMgrChirho {
         Ok(())
     }
 
+    /// WASM version: modules must be pre-registered, no filesystem scanning.
+    #[cfg(not(feature = "native"))]
+    pub fn load_modules_chirho(&mut self) -> ResultChirho<()> {
+        // On WASM, modules are pre-registered via register_module_chirho
+        // No filesystem scanning is performed
+        Ok(())
+    }
+
+    /// Register a module configuration (useful for WASM or manual loading).
+    ///
+    /// This allows adding module configurations without filesystem access.
+    pub fn register_module_chirho(&mut self, config_chirho: ModuleConfigChirho) {
+        self.modules_chirho.insert(config_chirho.name_chirho.clone(), config_chirho);
+    }
+
     /// Load modules in parallel using rayon.
-    #[cfg(feature = "parallel")]
+    #[cfg(all(feature = "native", feature = "parallel"))]
     fn load_modules_parallel_chirho(&mut self) -> ResultChirho<()> {
         use rayon::prelude::*;
 
@@ -198,7 +219,8 @@ impl SwMgrChirho {
         Ok(())
     }
 
-    /// Load modules from a specific path.
+    /// Load modules from a specific path (native only).
+    #[cfg(feature = "native")]
     fn load_modules_from_path_chirho(&mut self, path_chirho: &Path) -> ResultChirho<()> {
         let mods_d_chirho = path_chirho.join("mods.d");
 

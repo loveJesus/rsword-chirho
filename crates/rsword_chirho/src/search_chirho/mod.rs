@@ -87,28 +87,54 @@
 //! // Search multiple modules in parallel...
 //! ```
 
+// Tantivy-based search (native only, requires indexing)
+#[cfg(feature = "native")]
 mod tantivy_chirho;
+#[cfg(feature = "native")]
+mod query_builder_chirho;
+#[cfg(feature = "native")]
+mod parallel_chirho;
+
+// Cross-platform modules
 mod regex_chirho;
 mod query_parser_chirho;
-mod query_builder_chirho;
-mod parallel_chirho;
 pub mod highlighter_chirho;
+pub mod backend_chirho;
 
+// Native-only exports
+#[cfg(feature = "native")]
 pub use tantivy_chirho::TantivySearchChirho;
-pub use regex_chirho::{RegexSearchChirho, SearchEntryChirho};
-pub use query_parser_chirho::{
-    QueryParserChirho, QueryNodeChirho, SearchScopeChirho, to_tantivy_query_chirho,
-};
+#[cfg(feature = "native")]
 pub use query_builder_chirho::{
     TantivyQueryBuilderChirho, SearchBuilderChirho, ScoredResultChirho,
 };
+#[cfg(feature = "native")]
 pub use parallel_chirho::{
     ParallelSearchChirho, ParallelSearchConfigChirho, TestamentPartitionChirho,
     MultiModuleResultChirho, search_multi_module_parallel_chirho,
 };
+
+// Cross-platform exports
+pub use regex_chirho::{RegexSearchChirho, SearchEntryChirho};
+#[cfg(feature = "native")]
+pub use query_parser_chirho::{
+    QueryParserChirho, QueryNodeChirho, SearchScopeChirho, to_tantivy_query_chirho,
+};
+#[cfg(not(feature = "native"))]
+pub use query_parser_chirho::{
+    QueryParserChirho, QueryNodeChirho, SearchScopeChirho,
+};
 pub use highlighter_chirho::{
     HighlighterChirho, HighlightStyleChirho, HighlightOptionsChirho, HighlightedResultChirho,
 };
+
+// Search backend abstraction (cross-platform)
+pub use backend_chirho::{
+    SearchBackendChirho, SearchResultEntryChirho, SearchQueryOptionsChirho,
+    RegexSearchBackendChirho, get_default_search_backend_chirho,
+};
+#[cfg(feature = "native")]
+pub use backend_chirho::TantivySearchBackendChirho;
 
 use crate::error_chirho::ResultChirho;
 use crate::keys_chirho::ListKeyChirho;

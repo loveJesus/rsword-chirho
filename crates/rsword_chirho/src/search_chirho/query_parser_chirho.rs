@@ -271,6 +271,10 @@ impl QueryParserChirho {
 }
 
 /// Convert a query node to tantivy query syntax.
+///
+/// This function is only available when the `native` feature is enabled,
+/// as it generates query strings for the Tantivy search engine.
+#[cfg(feature = "native")]
 pub fn to_tantivy_query_chirho(node_chirho: &QueryNodeChirho) -> String {
     match node_chirho {
         QueryNodeChirho::TermChirho(term_chirho) => {
@@ -518,6 +522,7 @@ mod tests_chirho {
     }
 
     #[test]
+    #[cfg(feature = "native")]
     fn test_to_tantivy_query_chirho() {
         let node_chirho = QueryNodeChirho::AndChirho(
             Box::new(QueryNodeChirho::TermChirho("God".to_string())),

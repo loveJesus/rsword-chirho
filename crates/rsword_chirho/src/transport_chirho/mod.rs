@@ -170,10 +170,14 @@ impl TransportChirho for HttpTransportChirho {
 ///
 /// This provides a pure Rust HTTP client without requiring external tools
 /// like curl or wget. It's simpler and more portable than reqwest.
+///
+/// Only available on native platforms (requires the `native` feature).
+#[cfg(feature = "native")]
 pub struct UreqTransportChirho {
     agent_chirho: ureq::Agent,
 }
 
+#[cfg(feature = "native")]
 impl UreqTransportChirho {
     /// Create a new ureq transport.
     pub fn new_chirho() -> Self {
@@ -182,6 +186,7 @@ impl UreqTransportChirho {
     }
 }
 
+#[cfg(feature = "native")]
 impl TransportChirho for UreqTransportChirho {
     fn download_chirho(&self, url_chirho: &str, dest_chirho: &Path) -> ResultChirho<()> {
         // Create parent directories
@@ -234,19 +239,44 @@ impl TransportChirho for UreqTransportChirho {
     }
 }
 
-/// Type alias for backwards compatibility.
+/// Type alias for backwards compatibility (native only).
+#[cfg(feature = "native")]
 pub type SystemTransportChirho = UreqTransportChirho;
+
+/// Stub transport for WASM (no network support).
+#[cfg(not(feature = "native"))]
+pub struct StubTransportChirho;
+
+#[cfg(not(feature = "native"))]
+impl TransportChirho for StubTransportChirho {
+    fn download_chirho(&self, _url_chirho: &str, _dest_chirho: &Path) -> ResultChirho<()> {
+        Err(ErrorChirho::network_chirho("Network transport not available in WASM"))
+    }
+
+    fn fetch_chirho(&self, _url_chirho: &str) -> ResultChirho<Vec<u8>> {
+        Err(ErrorChirho::network_chirho("Network transport not available in WASM"))
+    }
+
+    fn is_accessible_chirho(&self, _url_chirho: &str) -> bool {
+        false
+    }
+}
+
+/// Type alias for backwards compatibility (WASM stub).
+#[cfg(not(feature = "native"))]
+pub type SystemTransportChirho = StubTransportChirho;
 
 #[cfg(test)]
 mod tests_chirho {
     use super::*;
 
     #[test]
+    #[cfg(feature = "native")]
     fn test_system_transport_new_chirho() {
         let _transport_chirho = SystemTransportChirho::new_chirho();
     }
 
-    #[cfg(not(feature = "http-transport"))]
+    #[cfg(all(feature = "native", not(feature = "http-transport")))]
     #[test]
     fn test_http_transport_stub_chirho() {
         let transport_chirho = HttpTransportChirho::new_chirho();

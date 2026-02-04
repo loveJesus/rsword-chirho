@@ -84,6 +84,14 @@ struct ArgsChirho {
     #[arg(short = 'u', long = "uninstall")]
     uninstall_chirho: Option<String>,
 
+    /// Install a module from a URL (for licensed/custom modules)
+    #[arg(long = "install-url")]
+    install_url_chirho: Option<String>,
+
+    /// Check if a module is available in a source
+    #[arg(long = "check", num_args = 2)]
+    check_available_chirho: Option<Vec<String>>,
+
     /// Local module path for listing
     #[arg(long = "ll")]
     local_list_chirho: Option<PathBuf>,
@@ -222,6 +230,29 @@ fn run_chirho(args_chirho: ArgsChirho) -> Result<(), Box<dyn std::error::Error>>
         println!("Uninstalling {}...", module_name_chirho);
         mgr_chirho.uninstall_module_chirho(module_name_chirho)?;
         println!("Done.");
+        return Ok(());
+    }
+
+    // Handle install from URL (for licensed/custom modules)
+    if let Some(url_chirho) = &args_chirho.install_url_chirho {
+        println!("Installing from URL: {}", url_chirho);
+        mgr_chirho.install_from_url_chirho(url_chirho)?;
+        println!("Done.");
+        return Ok(());
+    }
+
+    // Handle check if module is available
+    if let Some(check_args_chirho) = &args_chirho.check_available_chirho {
+        if check_args_chirho.len() >= 2 {
+            let source_name_chirho = &check_args_chirho[0];
+            let module_name_chirho = &check_args_chirho[1];
+            if mgr_chirho.is_module_available_chirho(source_name_chirho, module_name_chirho) {
+                println!("Module '{}' is available in {}", module_name_chirho, source_name_chirho);
+            } else {
+                println!("Module '{}' is NOT available in {}", module_name_chirho, source_name_chirho);
+                println!("This may be a licensed module not available for public download.");
+            }
+        }
         return Ok(());
     }
 

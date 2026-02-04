@@ -3,6 +3,11 @@
 // John 3:16
 
 //! SWORD module installation manager.
+//!
+//! This module is only available on native platforms (requires filesystem
+//! and network access for downloading and extracting module archives).
+
+#![cfg(feature = "native")]
 
 use std::fs::File;
 use std::io::{BufReader, Read};
@@ -172,6 +177,22 @@ impl InstallMgrChirho {
     ) -> ResultChirho<()> {
         let source_chirho = self.find_source_chirho(source_name_chirho)
             .ok_or_else(|| ErrorChirho::generic_chirho(format!("Source not found: {}", source_name_chirho)))?;
+
+        // First check if the module exists in the remote module list
+        let remote_modules_chirho = self.list_remote_modules_chirho(source_name_chirho)?;
+        let module_exists_chirho = remote_modules_chirho.iter()
+            .any(|m_chirho| m_chirho.eq_ignore_ascii_case(module_name_chirho));
+
+        if !module_exists_chirho {
+            return Err(ErrorChirho::generic_chirho(format!(
+                "Module '{}' not found in {} repository.\n\
+                 This may be a licensed/commercial module not available for public download.\n\
+                 Some Bible translations (ESV, NIV, NASB, etc.) require purchasing from \
+                 the copyright holder.\n\
+                 Use 'refresh' to update the module list, or 'list' to see available modules.",
+                module_name_chirho, source_name_chirho
+            )));
+        }
 
         // Build the download URL
         // CrossWire mirrors use: https://crosswire.org/ftpmirror/pub/sword/packages/rawzip/ModuleName.zip
@@ -377,6 +398,48 @@ impl InstallMgrChirho {
         }
 
         Ok(results_chirho)
+    }
+
+    /// Check if a module is available in a source.
+    ///
+    /// This checks the cached module list. Call `refresh_source_chirho` first
+    /// to ensure the list is up to date.
+    pub fn is_module_available_chirho(&self, source_name_chirho: &str, module_name_chirho: &str) -> bool {
+        self.list_remote_modules_chirho(source_name_chirho)
+            .map(|modules_chirho| modules_chirho.iter()
+                .any(|m_chirho| m_chirho.eq_ignore_ascii_case(module_name_chirho)))
+            .unwrap_or(false)
+    }
+
+    /// Install a module from a URL (for licensed modules or custom sources).
+    ///
+    /// Use this when installing modules that aren't in the standard repositories,
+    /// such as licensed translations that must be obtained separately.
+    pub fn install_from_url_chirho(&self, url_chirho: &str) -> ResultChirho<()> {
+        let transport_chirho = SystemTransportChirho::new_chirho();
+
+        // Extract filename from URL
+        let filename_chirho = url_chirho
+            .rsplit('/')
+            .next()
+            .unwrap_or("module.zip");
+
+        let temp_zip_chirho = self.config_dir_chirho.join(filename_chirho);
+        eprintln!("Downloading from {}...", url_chirho);
+        transport_chirho.download_chirho(url_chirho, &temp_zip_chirho)?;
+
+        // Extract the zip file
+        eprintln!("Extracting...");
+        if let Err(e_chirho) = extract_zip_chirho(&temp_zip_chirho, &self.install_path_chirho) {
+            let _ = std::fs::remove_file(&temp_zip_chirho);
+            return Err(e_chirho);
+        }
+
+        // Clean up
+        let _ = std::fs::remove_file(&temp_zip_chirho);
+
+        eprintln!("Module installed successfully from URL.");
+        Ok(())
     }
 
     /// Refresh all sources.

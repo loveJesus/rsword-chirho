@@ -156,6 +156,7 @@ pub use keys_chirho::list_key_chirho::ListKeyChirho;
 pub use modules_chirho::sw_module_chirho::SwModuleChirho;
 pub use modules_chirho::texts_chirho::RawTextChirho;
 pub use manager_chirho::sw_mgr_chirho::SwMgrChirho;
+#[cfg(feature = "native")]
 pub use manager_chirho::install_mgr_chirho::InstallMgrChirho;
 pub use config_chirho::InstallSourceChirho;
 pub use versification_chirho::{
@@ -164,8 +165,10 @@ pub use versification_chirho::{
 };
 pub use search_chirho::{
     SearchEngineChirho, SearchOptionsChirho, SearchTypeChirho,
-    TantivySearchChirho, RegexSearchChirho,
+    RegexSearchChirho,
 };
+#[cfg(feature = "native")]
+pub use search_chirho::TantivySearchChirho;
 pub use filters_chirho::{
     FilterChirho, FilterOptionsChirho, FilterChainChirho,
     OsisToHtmlFilterChirho, OsisToPlainFilterChirho,

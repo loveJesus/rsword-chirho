@@ -565,10 +565,26 @@ pub fn load_module_chirho(
 
     let full_path_chirho = base_path_chirho.join(clean_data_path_chirho);
 
-    if !full_path_chirho.exists() {
-        return Err(ErrorChirho::InvalidModulePathChirho {
-            path_chirho: full_path_chirho,
-        });
+    // For GenBook modules, DataPath ends with basename (e.g., "josephus/josephus")
+    // so we check if parent directory exists, not the path itself
+    let is_genbook_chirho = matches!(
+        driver_type_chirho,
+        ModuleDriverTypeChirho::RawGenBookChirho | ModuleDriverTypeChirho::ZGenBookChirho
+    );
+
+    let path_to_check_chirho = if is_genbook_chirho {
+        // For genbooks, check if the parent directory exists
+        full_path_chirho.parent().map(|p_chirho| p_chirho.to_path_buf())
+    } else {
+        Some(full_path_chirho.clone())
+    };
+
+    if let Some(check_path_chirho) = &path_to_check_chirho {
+        if !check_path_chirho.exists() {
+            return Err(ErrorChirho::InvalidModulePathChirho {
+                path_chirho: check_path_chirho.clone(),
+            });
+        }
     }
 
     Ok(LoadedModuleChirho {

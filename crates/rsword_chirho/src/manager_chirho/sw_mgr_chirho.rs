@@ -339,11 +339,25 @@ impl SwMgrChirho {
         // Strip leading "./" from data path if present
         let clean_data_path_chirho = data_path_chirho.strip_prefix("./").unwrap_or(data_path_chirho);
 
+        // Check if this is a genbook module (DataPath ends with basename, not directory)
+        let is_genbook_chirho = config_chirho.is_genbook_chirho();
+
         // Find which base path contains this module
         for base_path_chirho in &self.mod_paths_chirho {
             let full_path_chirho = base_path_chirho.join(clean_data_path_chirho);
-            if full_path_chirho.exists() {
-                return Some(base_path_chirho.clone());
+
+            // For genbook modules, check if parent directory exists
+            // For other modules, check if the path itself exists
+            let path_to_check_chirho = if is_genbook_chirho {
+                full_path_chirho.parent().map(|p_chirho| p_chirho.to_path_buf())
+            } else {
+                Some(full_path_chirho)
+            };
+
+            if let Some(check_path_chirho) = path_to_check_chirho {
+                if check_path_chirho.exists() {
+                    return Some(base_path_chirho.clone());
+                }
             }
         }
 

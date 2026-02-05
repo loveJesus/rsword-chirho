@@ -5,70 +5,87 @@
 //! RawGenBook module driver.
 //!
 //! Provides access to SWORD general book modules using tree-structured keys.
-//! File format:
-//! - .bdt - Tree index file (tree node structure)
-//! - .bds - Data file (entry content)
+//!
+//! ## File format
+//!
+//! SWORD RawGenBook modules use three files:
+//! - `.idx` - Offset index (4-byte little-endian offsets into .dat for each entry)
+//! - `.dat` - Tree structure data (TreeKeyIdxBuf + name + userData for each entry)
+//! - `.bdt` - Content data (actual entry content)
+//!
+//! ### Tree node format in .dat
+//!
+//! Each entry consists of:
+//! 1. TreeKeyIdxBuf (12 bytes, little-endian):
+//!    - parent: i32 (stored as 4× actual index, -1 for root)
+//!    - next_sibling: i32 (stored as 4× actual index, -1 if none)
+//!    - first_child: i32 (stored as 4× actual index, -1 if none)
+//! 2. Key name (null-terminated string, may have 0xFF padding for root entry)
+//! 3. userData (10 bytes):
+//!    - version: u16 (usually 0x0008)
+//!    - content_offset: u32 (little-endian, offset into .bdt)
+//!    - content_size: u32 (little-endian, size of content in .bdt)
+//! 4. Next entry data follows immediately
 
 use std::collections::HashMap;
-use std::fs::{File, OpenOptions};
-use std::io::{BufReader, Read, Seek, SeekFrom, Write};
+use std::fs::File;
+use std::io::{BufReader, Read, Seek, SeekFrom};
 use std::path::{Path, PathBuf};
 
 use crate::error_chirho::{ErrorChirho, ResultChirho};
 use crate::keys_chirho::TreeKeyChirho;
 
-/// Size of a tree node entry in the index file.
-const TREE_NODE_SIZE_CHIRHO: usize = 12;
+/// Size of TreeKeyIdxBuf in bytes.
+const TREE_KEY_IDX_BUF_SIZE_CHIRHO: usize = 12;
 
 /// A tree node in the index structure.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 struct TreeNodeChirho {
-    /// Offset to the entry data in .bds file.
-    offset_chirho: u32,
-    /// Size of the entry data.
-    size_chirho: u32,
-    /// Index of the parent node (-1 for root).
+    /// Index of the parent node (-1 for root). Stored as 4× actual index.
     parent_chirho: i32,
+    /// Index of the next sibling (-1 if none). Stored as 4× actual index.
+    next_sibling_chirho: i32,
+    /// Index of the first child (-1 if none). Stored as 4× actual index.
+    first_child_chirho: i32,
+    /// Key name for this node.
+    name_chirho: String,
+    /// Offset to content in .bdt file.
+    content_offset_chirho: u32,
+    /// Size of content in .bdt file.
+    content_size_chirho: u32,
 }
 
 impl TreeNodeChirho {
-    /// Read a tree node from bytes (big-endian).
-    fn from_bytes_chirho(data_chirho: &[u8]) -> Self {
-        assert!(data_chirho.len() >= TREE_NODE_SIZE_CHIRHO);
-        Self {
-            offset_chirho: u32::from_be_bytes([
-                data_chirho[0],
-                data_chirho[1],
-                data_chirho[2],
-                data_chirho[3],
-            ]),
-            size_chirho: u32::from_be_bytes([
-                data_chirho[4],
-                data_chirho[5],
-                data_chirho[6],
-                data_chirho[7],
-            ]),
-            parent_chirho: i32::from_be_bytes([
-                data_chirho[8],
-                data_chirho[9],
-                data_chirho[10],
-                data_chirho[11],
-            ]),
+    /// Get the actual parent index (divide by 4).
+    fn parent_idx_chirho(&self) -> Option<usize> {
+        if self.parent_chirho < 0 {
+            None
+        } else {
+            Some((self.parent_chirho / 4) as usize)
         }
     }
 
-    /// Check if this is an empty/placeholder node.
-    fn is_empty_chirho(&self) -> bool {
-        self.offset_chirho == 0 && self.size_chirho == 0
+    /// Get the actual next sibling index (divide by 4).
+    fn next_sibling_idx_chirho(&self) -> Option<usize> {
+        if self.next_sibling_chirho < 0 {
+            None
+        } else {
+            Some((self.next_sibling_chirho / 4) as usize)
+        }
     }
 
-    /// Convert to bytes (big-endian).
-    fn to_bytes_chirho(self) -> [u8; TREE_NODE_SIZE_CHIRHO] {
-        let mut bytes_chirho = [0u8; TREE_NODE_SIZE_CHIRHO];
-        bytes_chirho[0..4].copy_from_slice(&self.offset_chirho.to_be_bytes());
-        bytes_chirho[4..8].copy_from_slice(&self.size_chirho.to_be_bytes());
-        bytes_chirho[8..12].copy_from_slice(&self.parent_chirho.to_be_bytes());
-        bytes_chirho
+    /// Get the actual first child index (divide by 4).
+    fn first_child_idx_chirho(&self) -> Option<usize> {
+        if self.first_child_chirho < 0 {
+            None
+        } else {
+            Some((self.first_child_chirho / 4) as usize)
+        }
+    }
+
+    /// Check if this node has content.
+    fn has_content_chirho(&self) -> bool {
+        self.content_size_chirho > 0
     }
 }
 
@@ -89,11 +106,9 @@ pub struct RawGenBookChirho {
     basename_chirho: String,
     /// Tree nodes from the index file.
     nodes_chirho: Vec<TreeNodeChirho>,
-    /// Key names for each node.
-    key_names_chirho: Vec<String>,
     /// Map from key path to node index.
     key_index_chirho: HashMap<String, usize>,
-    /// Children for each node.
+    /// Children for each node (built from tree structure).
     children_chirho: Vec<Vec<usize>>,
 }
 
@@ -103,21 +118,22 @@ impl RawGenBookChirho {
         let path_chirho = path_chirho.as_ref().to_path_buf();
 
         // Create empty index and data files
-        let index_path_chirho = path_chirho.join(format!("{}.bdt", basename_chirho));
-        let data_path_chirho = path_chirho.join(format!("{}.bds", basename_chirho));
+        let idx_path_chirho = path_chirho.join(format!("{}.idx", basename_chirho));
+        let dat_path_chirho = path_chirho.join(format!("{}.dat", basename_chirho));
+        let bdt_path_chirho = path_chirho.join(format!("{}.bdt", basename_chirho));
 
         // Ensure directory exists
         std::fs::create_dir_all(&path_chirho).map_err(ErrorChirho::IoChirho)?;
 
         // Create empty files
-        File::create(&index_path_chirho).map_err(ErrorChirho::IoChirho)?;
-        File::create(&data_path_chirho).map_err(ErrorChirho::IoChirho)?;
+        File::create(&idx_path_chirho).map_err(ErrorChirho::IoChirho)?;
+        File::create(&dat_path_chirho).map_err(ErrorChirho::IoChirho)?;
+        File::create(&bdt_path_chirho).map_err(ErrorChirho::IoChirho)?;
 
         Ok(Self {
             path_chirho,
             basename_chirho: basename_chirho.to_string(),
             nodes_chirho: Vec::new(),
-            key_names_chirho: Vec::new(),
             key_index_chirho: HashMap::new(),
             children_chirho: Vec::new(),
         })
@@ -130,7 +146,6 @@ impl RawGenBookChirho {
             path_chirho,
             basename_chirho: basename_chirho.to_string(),
             nodes_chirho: Vec::new(),
-            key_names_chirho: Vec::new(),
             key_index_chirho: HashMap::new(),
             children_chirho: Vec::new(),
         };
@@ -138,66 +153,153 @@ impl RawGenBookChirho {
         Ok(module_chirho)
     }
 
-    /// Load the tree index from the .bdt file.
+    /// Load the tree index from .idx and .dat files.
     fn load_index_chirho(&mut self) -> ResultChirho<()> {
-        let index_path_chirho = self.path_chirho.join(format!("{}.bdt", self.basename_chirho));
+        let idx_path_chirho = self.path_chirho.join(format!("{}.idx", self.basename_chirho));
+        let dat_path_chirho = self.path_chirho.join(format!("{}.dat", self.basename_chirho));
 
-        let file_chirho = File::open(&index_path_chirho).map_err(ErrorChirho::IoChirho)?;
+        // Read idx file (4-byte offsets into dat)
+        let idx_file_chirho = File::open(&idx_path_chirho).map_err(ErrorChirho::IoChirho)?;
+        let idx_metadata_chirho = idx_file_chirho.metadata().map_err(ErrorChirho::IoChirho)?;
+        let idx_size_chirho = idx_metadata_chirho.len() as usize;
+        let num_entries_chirho = idx_size_chirho / 4;
 
-        let metadata_chirho = file_chirho.metadata().map_err(ErrorChirho::IoChirho)?;
+        let mut idx_reader_chirho = BufReader::new(idx_file_chirho);
+        let mut idx_data_chirho = vec![0u8; idx_size_chirho];
+        idx_reader_chirho.read_exact(&mut idx_data_chirho).map_err(ErrorChirho::IoChirho)?;
 
-        let file_size_chirho = metadata_chirho.len() as usize;
+        // Parse offsets
+        let offsets_chirho: Vec<u32> = (0..num_entries_chirho)
+            .map(|i_chirho| {
+                u32::from_le_bytes([
+                    idx_data_chirho[i_chirho * 4],
+                    idx_data_chirho[i_chirho * 4 + 1],
+                    idx_data_chirho[i_chirho * 4 + 2],
+                    idx_data_chirho[i_chirho * 4 + 3],
+                ])
+            })
+            .collect();
 
-        // RawGenBook uses a variable-length record format:
-        // Each record: 4 bytes (offset) + 4 bytes (size) + 4 bytes (parent) + name (null-terminated)
-        // We need to read the entire file and parse it
+        // Read dat file (tree structure + names + userData)
+        let dat_file_chirho = File::open(&dat_path_chirho).map_err(ErrorChirho::IoChirho)?;
+        let dat_metadata_chirho = dat_file_chirho.metadata().map_err(ErrorChirho::IoChirho)?;
+        let dat_size_chirho = dat_metadata_chirho.len() as usize;
 
-        let mut reader_chirho = BufReader::new(file_chirho);
-        let mut buffer_chirho = vec![0u8; file_size_chirho];
-        reader_chirho.read_exact(&mut buffer_chirho).map_err(ErrorChirho::IoChirho)?;
+        let mut dat_reader_chirho = BufReader::new(dat_file_chirho);
+        let mut dat_data_chirho = vec![0u8; dat_size_chirho];
+        dat_reader_chirho.read_exact(&mut dat_data_chirho).map_err(ErrorChirho::IoChirho)?;
 
-        // Parse variable-length records
-        let mut pos_chirho = 0;
-        while pos_chirho + TREE_NODE_SIZE_CHIRHO < file_size_chirho {
-            let node_chirho = TreeNodeChirho::from_bytes_chirho(&buffer_chirho[pos_chirho..]);
-            pos_chirho += TREE_NODE_SIZE_CHIRHO;
-
-            // Read the null-terminated name
-            let name_start_chirho = pos_chirho;
-            while pos_chirho < file_size_chirho && buffer_chirho[pos_chirho] != 0 {
-                pos_chirho += 1;
-            }
-
-            let name_chirho = if pos_chirho > name_start_chirho {
-                String::from_utf8_lossy(&buffer_chirho[name_start_chirho..pos_chirho]).to_string()
+        // Parse each entry
+        for entry_idx_chirho in 0..num_entries_chirho {
+            let start_chirho = offsets_chirho[entry_idx_chirho] as usize;
+            let end_chirho = if entry_idx_chirho + 1 < num_entries_chirho {
+                offsets_chirho[entry_idx_chirho + 1] as usize
             } else {
-                String::new()
+                dat_size_chirho
             };
 
-            // Skip the null terminator
-            if pos_chirho < file_size_chirho && buffer_chirho[pos_chirho] == 0 {
-                pos_chirho += 1;
+            if start_chirho + TREE_KEY_IDX_BUF_SIZE_CHIRHO > dat_size_chirho {
+                break;
             }
 
-            self.nodes_chirho.push(node_chirho);
-            self.key_names_chirho.push(name_chirho);
-            self.children_chirho.push(Vec::new());
+            let record_chirho = &dat_data_chirho[start_chirho..end_chirho];
+            if let Some(node_chirho) = self.parse_node_chirho(record_chirho) {
+                self.nodes_chirho.push(node_chirho);
+            }
         }
 
-        // Build the children lists
+        // Build children lists from tree structure
+        self.children_chirho = vec![Vec::new(); self.nodes_chirho.len()];
         for (idx_chirho, node_chirho) in self.nodes_chirho.iter().enumerate() {
-            if node_chirho.parent_chirho >= 0 {
-                let parent_idx_chirho = node_chirho.parent_chirho as usize;
+            if let Some(parent_idx_chirho) = node_chirho.parent_idx_chirho() {
                 if parent_idx_chirho < self.children_chirho.len() {
                     self.children_chirho[parent_idx_chirho].push(idx_chirho);
                 }
             }
         }
 
-        // Build the key path index
+        // Build key path index
         self.build_key_index_chirho();
 
         Ok(())
+    }
+
+    /// Parse a single node from record data.
+    fn parse_node_chirho(&self, record_chirho: &[u8]) -> Option<TreeNodeChirho> {
+        if record_chirho.len() < TREE_KEY_IDX_BUF_SIZE_CHIRHO {
+            return None;
+        }
+
+        // Parse TreeKeyIdxBuf (12 bytes, little-endian)
+        let parent_chirho = i32::from_le_bytes([
+            record_chirho[0],
+            record_chirho[1],
+            record_chirho[2],
+            record_chirho[3],
+        ]);
+        let next_sibling_chirho = i32::from_le_bytes([
+            record_chirho[4],
+            record_chirho[5],
+            record_chirho[6],
+            record_chirho[7],
+        ]);
+        let first_child_chirho = i32::from_le_bytes([
+            record_chirho[8],
+            record_chirho[9],
+            record_chirho[10],
+            record_chirho[11],
+        ]);
+
+        // Find name start (skip any 0xFF or 0x00 padding, common in root entry)
+        let mut name_start_chirho = TREE_KEY_IDX_BUF_SIZE_CHIRHO;
+        while name_start_chirho < record_chirho.len()
+            && (record_chirho[name_start_chirho] == 0xFF
+                || record_chirho[name_start_chirho] == 0x00)
+        {
+            name_start_chirho += 1;
+        }
+
+        // Find name end (null terminator)
+        let name_end_chirho = record_chirho[name_start_chirho..]
+            .iter()
+            .position(|&b_chirho| b_chirho == 0)
+            .map(|pos_chirho| name_start_chirho + pos_chirho)
+            .unwrap_or(record_chirho.len());
+
+        let name_chirho = String::from_utf8_lossy(
+            &record_chirho[name_start_chirho..name_end_chirho]
+        ).to_string();
+
+        // Parse userData after name+null
+        // Format: 2 bytes version + 4 bytes offset + 4 bytes size
+        let mut content_offset_chirho = 0u32;
+        let mut content_size_chirho = 0u32;
+
+        let user_data_start_chirho = name_end_chirho + 1;
+        if user_data_start_chirho + 10 <= record_chirho.len() {
+            // Skip 2-byte version field
+            content_offset_chirho = u32::from_le_bytes([
+                record_chirho[user_data_start_chirho + 2],
+                record_chirho[user_data_start_chirho + 3],
+                record_chirho[user_data_start_chirho + 4],
+                record_chirho[user_data_start_chirho + 5],
+            ]);
+            content_size_chirho = u32::from_le_bytes([
+                record_chirho[user_data_start_chirho + 6],
+                record_chirho[user_data_start_chirho + 7],
+                record_chirho[user_data_start_chirho + 8],
+                record_chirho[user_data_start_chirho + 9],
+            ]);
+        }
+
+        Some(TreeNodeChirho {
+            parent_chirho,
+            next_sibling_chirho,
+            first_child_chirho,
+            name_chirho,
+            content_offset_chirho,
+            content_size_chirho,
+        })
     }
 
     /// Build the key path index by traversing the tree.
@@ -211,15 +313,17 @@ impl RawGenBookChirho {
     /// Build the full path for a node by walking up to root.
     fn build_path_chirho(&self, node_idx_chirho: usize) -> String {
         let mut components_chirho: Vec<&str> = Vec::new();
-        let mut idx_chirho = node_idx_chirho;
+        let mut idx_chirho = Some(node_idx_chirho);
 
-        while idx_chirho < self.nodes_chirho.len() {
-            components_chirho.push(&self.key_names_chirho[idx_chirho]);
-            let parent_chirho = self.nodes_chirho[idx_chirho].parent_chirho;
-            if parent_chirho < 0 {
+        while let Some(i_chirho) = idx_chirho {
+            if i_chirho >= self.nodes_chirho.len() {
                 break;
             }
-            idx_chirho = parent_chirho as usize;
+            let node_chirho = &self.nodes_chirho[i_chirho];
+            if !node_chirho.name_chirho.is_empty() {
+                components_chirho.push(&node_chirho.name_chirho);
+            }
+            idx_chirho = node_chirho.parent_idx_chirho();
         }
 
         components_chirho.reverse();
@@ -228,7 +332,32 @@ impl RawGenBookChirho {
 
     /// Get the number of entries.
     pub fn entry_count_chirho(&self) -> usize {
-        self.nodes_chirho.iter().filter(|n_chirho| !n_chirho.is_empty_chirho()).count()
+        self.nodes_chirho.iter().filter(|n_chirho| n_chirho.has_content_chirho()).count()
+    }
+
+    /// Read content for a node index.
+    fn read_content_chirho(&self, idx_chirho: usize) -> ResultChirho<Option<String>> {
+        if idx_chirho >= self.nodes_chirho.len() {
+            return Ok(None);
+        }
+
+        let node_chirho = &self.nodes_chirho[idx_chirho];
+        if !node_chirho.has_content_chirho() {
+            return Ok(None);
+        }
+
+        // Content is in .bdt file
+        let bdt_path_chirho = self.path_chirho.join(format!("{}.bdt", self.basename_chirho));
+        let mut file_chirho = File::open(&bdt_path_chirho).map_err(ErrorChirho::IoChirho)?;
+
+        file_chirho.seek(SeekFrom::Start(node_chirho.content_offset_chirho as u64))
+            .map_err(ErrorChirho::IoChirho)?;
+
+        let mut buffer_chirho = vec![0u8; node_chirho.content_size_chirho as usize];
+        file_chirho.read_exact(&mut buffer_chirho).map_err(ErrorChirho::IoChirho)?;
+
+        let content_chirho = String::from_utf8_lossy(&buffer_chirho).to_string();
+        Ok(Some(content_chirho))
     }
 
     /// Read an entry by tree key path.
@@ -236,21 +365,7 @@ impl RawGenBookChirho {
         let normalized_chirho = self.normalize_key_chirho(key_chirho);
 
         if let Some(&idx_chirho) = self.key_index_chirho.get(&normalized_chirho) {
-            let node_chirho = &self.nodes_chirho[idx_chirho];
-            if node_chirho.is_empty_chirho() || node_chirho.size_chirho == 0 {
-                return Ok(None);
-            }
-
-            let data_path_chirho = self.path_chirho.join(format!("{}.bds", self.basename_chirho));
-            let mut file_chirho = File::open(&data_path_chirho).map_err(ErrorChirho::IoChirho)?;
-
-            file_chirho.seek(SeekFrom::Start(node_chirho.offset_chirho as u64)).map_err(ErrorChirho::IoChirho)?;
-
-            let mut buffer_chirho = vec![0u8; node_chirho.size_chirho as usize];
-            file_chirho.read_exact(&mut buffer_chirho).map_err(ErrorChirho::IoChirho)?;
-
-            let content_chirho = String::from_utf8_lossy(&buffer_chirho).to_string();
-            Ok(Some(content_chirho))
+            self.read_content_chirho(idx_chirho)
         } else {
             Ok(None)
         }
@@ -284,23 +399,60 @@ impl RawGenBookChirho {
         let normalized_chirho = self.normalize_key_chirho(key_chirho);
 
         if let Some(&idx_chirho) = self.key_index_chirho.get(&normalized_chirho) {
-            self.children_chirho[idx_chirho]
-                .iter()
-                .map(|&child_idx_chirho| self.build_path_chirho(child_idx_chirho))
-                .collect()
+            // Use tree structure to get children (first_child + next_sibling chain)
+            let mut children_chirho = Vec::new();
+
+            if let Some(first_child_idx_chirho) = self.nodes_chirho[idx_chirho].first_child_idx_chirho() {
+                let mut child_idx_chirho = Some(first_child_idx_chirho);
+                while let Some(ci_chirho) = child_idx_chirho {
+                    if ci_chirho >= self.nodes_chirho.len() {
+                        break;
+                    }
+                    children_chirho.push(self.build_path_chirho(ci_chirho));
+                    child_idx_chirho = self.nodes_chirho[ci_chirho].next_sibling_idx_chirho();
+                }
+            }
+
+            children_chirho
         } else {
             Vec::new()
         }
     }
 
-    /// Get all root-level keys.
+    /// Get all root-level keys (entries with no parent).
     pub fn get_root_keys_chirho(&self) -> Vec<String> {
         self.nodes_chirho
             .iter()
             .enumerate()
-            .filter(|(_, n_chirho)| n_chirho.parent_chirho < 0)
+            .filter(|(_, n_chirho)| n_chirho.parent_idx_chirho().is_none())
             .map(|(idx_chirho, _)| self.build_path_chirho(idx_chirho))
             .collect()
+    }
+
+    /// Get children keys for display (just the name, not full path).
+    pub fn get_children_names_chirho(&self, key_chirho: &str) -> Vec<(String, String)> {
+        let normalized_chirho = self.normalize_key_chirho(key_chirho);
+
+        if let Some(&idx_chirho) = self.key_index_chirho.get(&normalized_chirho) {
+            let mut children_chirho = Vec::new();
+
+            if let Some(first_child_idx_chirho) = self.nodes_chirho[idx_chirho].first_child_idx_chirho() {
+                let mut child_idx_chirho = Some(first_child_idx_chirho);
+                while let Some(ci_chirho) = child_idx_chirho {
+                    if ci_chirho >= self.nodes_chirho.len() {
+                        break;
+                    }
+                    let node_chirho = &self.nodes_chirho[ci_chirho];
+                    let path_chirho = self.build_path_chirho(ci_chirho);
+                    children_chirho.push((path_chirho, node_chirho.name_chirho.clone()));
+                    child_idx_chirho = node_chirho.next_sibling_idx_chirho();
+                }
+            }
+
+            children_chirho
+        } else {
+            Vec::new()
+        }
     }
 
     /// Check if a key exists.
@@ -309,82 +461,14 @@ impl RawGenBookChirho {
         self.key_index_chirho.contains_key(&normalized_chirho)
     }
 
-    /// Write an entry to the general book.
-    ///
-    /// # Arguments
-    /// * `key_chirho` - The tree key path (e.g., "/Book/Chapter/Section")
-    /// * `content_chirho` - The entry content
-    /// * `parent_key_chirho` - Optional parent key (defaults to root if None)
-    pub fn write_entry_chirho(
-        &mut self,
-        key_chirho: &str,
-        content_chirho: &str,
-        parent_key_chirho: Option<&str>,
-    ) -> ResultChirho<()> {
+    /// Check if an entry has children.
+    pub fn has_children_chirho(&self, key_chirho: &str) -> bool {
         let normalized_chirho = self.normalize_key_chirho(key_chirho);
-
-        // Find parent index
-        let parent_idx_chirho = if let Some(pk_chirho) = parent_key_chirho {
-            let normalized_parent_chirho = self.normalize_key_chirho(pk_chirho);
-            self.key_index_chirho.get(&normalized_parent_chirho).copied()
-                .map(|i| i as i32)
-                .unwrap_or(-1)
+        if let Some(&idx_chirho) = self.key_index_chirho.get(&normalized_chirho) {
+            self.nodes_chirho[idx_chirho].first_child_idx_chirho().is_some()
         } else {
-            -1 // Root level
-        };
-
-        // Write content to data file
-        let data_path_chirho = self.path_chirho.join(format!("{}.bds", self.basename_chirho));
-        let mut data_file_chirho = OpenOptions::new()
-            .create(true)
-            .append(true)
-            .open(&data_path_chirho)
-            .map_err(ErrorChirho::IoChirho)?;
-
-        let offset_chirho = data_file_chirho.seek(SeekFrom::End(0)).map_err(ErrorChirho::IoChirho)? as u32;
-        let content_bytes_chirho = content_chirho.as_bytes();
-        let size_chirho = content_bytes_chirho.len() as u32;
-
-        data_file_chirho.write_all(content_bytes_chirho).map_err(ErrorChirho::IoChirho)?;
-
-        // Create new node
-        let node_chirho = TreeNodeChirho {
-            offset_chirho,
-            size_chirho,
-            parent_chirho: parent_idx_chirho,
-        };
-
-        // Extract the key name (last component)
-        let key_name_chirho = normalized_chirho.rsplit('/').next().unwrap_or(&normalized_chirho).to_string();
-
-        // Append to index file
-        let index_path_chirho = self.path_chirho.join(format!("{}.bdt", self.basename_chirho));
-        let mut index_file_chirho = OpenOptions::new()
-            .create(true)
-            .append(true)
-            .open(&index_path_chirho)
-            .map_err(ErrorChirho::IoChirho)?;
-
-        index_file_chirho.write_all(&node_chirho.to_bytes_chirho()).map_err(ErrorChirho::IoChirho)?;
-        index_file_chirho.write_all(key_name_chirho.as_bytes()).map_err(ErrorChirho::IoChirho)?;
-        index_file_chirho.write_all(&[0u8]).map_err(ErrorChirho::IoChirho)?; // Null terminator
-
-        // Update in-memory structures
-        let new_idx_chirho = self.nodes_chirho.len();
-        self.nodes_chirho.push(node_chirho);
-        self.key_names_chirho.push(key_name_chirho);
-        self.children_chirho.push(Vec::new());
-        self.key_index_chirho.insert(normalized_chirho, new_idx_chirho);
-
-        // Update parent's children list
-        if parent_idx_chirho >= 0 {
-            let parent_idx_usize_chirho = parent_idx_chirho as usize;
-            if parent_idx_usize_chirho < self.children_chirho.len() {
-                self.children_chirho[parent_idx_usize_chirho].push(new_idx_chirho);
-            }
+            false
         }
-
-        Ok(())
     }
 
     /// Create an iterator over all entries.
@@ -411,13 +495,13 @@ impl<'a> Iterator for RawGenBookIteratorChirho<'a> {
             self.index_chirho += 1;
 
             let node_chirho = &self.module_chirho.nodes_chirho[idx_chirho];
-            if node_chirho.is_empty_chirho() || node_chirho.size_chirho == 0 {
+            if !node_chirho.has_content_chirho() {
                 continue;
             }
 
             let key_chirho = self.module_chirho.build_path_chirho(idx_chirho);
 
-            match self.module_chirho.read_entry_chirho(&key_chirho) {
+            match self.module_chirho.read_content_chirho(idx_chirho) {
                 Ok(Some(content_chirho)) => {
                     return Some(Ok(GenBookEntryChirho {
                         key_chirho,
@@ -437,33 +521,36 @@ mod tests_chirho {
     use super::*;
 
     #[test]
-    fn test_tree_node_from_bytes_chirho() {
-        let data_chirho: [u8; 12] = [
-            0x00, 0x00, 0x01, 0x00, // offset = 256
-            0x00, 0x00, 0x00, 0x64, // size = 100
-            0xFF, 0xFF, 0xFF, 0xFF, // parent = -1 (root)
-        ];
+    fn test_tree_node_indices_chirho() {
+        let node_chirho = TreeNodeChirho {
+            parent_chirho: 4, // Actual index = 1
+            next_sibling_chirho: 8, // Actual index = 2
+            first_child_chirho: -1, // No children
+            name_chirho: "Test".to_string(),
+            content_offset_chirho: 100,
+            content_size_chirho: 50,
+        };
 
-        let node_chirho = TreeNodeChirho::from_bytes_chirho(&data_chirho);
-        assert_eq!(node_chirho.offset_chirho, 256);
-        assert_eq!(node_chirho.size_chirho, 100);
-        assert_eq!(node_chirho.parent_chirho, -1);
+        assert_eq!(node_chirho.parent_idx_chirho(), Some(1));
+        assert_eq!(node_chirho.next_sibling_idx_chirho(), Some(2));
+        assert_eq!(node_chirho.first_child_idx_chirho(), None);
+        assert!(node_chirho.has_content_chirho());
     }
 
     #[test]
-    fn test_tree_node_empty_chirho() {
+    fn test_tree_node_root_chirho() {
         let node_chirho = TreeNodeChirho {
-            offset_chirho: 0,
-            size_chirho: 0,
-            parent_chirho: -1,
+            parent_chirho: -1, // Root
+            next_sibling_chirho: -1,
+            first_child_chirho: 4, // First child at index 1
+            name_chirho: "Root".to_string(),
+            content_offset_chirho: 0,
+            content_size_chirho: 0,
         };
-        assert!(node_chirho.is_empty_chirho());
 
-        let node2_chirho = TreeNodeChirho {
-            offset_chirho: 100,
-            size_chirho: 50,
-            parent_chirho: 0,
-        };
-        assert!(!node2_chirho.is_empty_chirho());
+        assert_eq!(node_chirho.parent_idx_chirho(), None);
+        assert_eq!(node_chirho.next_sibling_idx_chirho(), None);
+        assert_eq!(node_chirho.first_child_idx_chirho(), Some(1));
+        assert!(!node_chirho.has_content_chirho());
     }
 }

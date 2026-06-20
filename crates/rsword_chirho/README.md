@@ -156,17 +156,21 @@ let html_chirho = filter_chirho.process_chirho(osis_chirho)?;
 ```rust
 use rsword_chirho::manager_chirho::InstallMgrChirho;
 
-let mut install_mgr_chirho = InstallMgrChirho::new_chirho();
-install_mgr_chirho.init_chirho()?;
-install_mgr_chirho.sync_config_chirho()?;
+// new_chirho takes the config/install directory (where modules are stored).
+let mut install_mgr_chirho = InstallMgrChirho::new_chirho("/path/to/.sword")?;
+install_mgr_chirho.init_chirho()?; // creates dirs + registers the default CrossWire source
 
-// List available modules from CrossWire
-let modules_chirho = install_mgr_chirho.get_remote_modules_chirho("CrossWire")?;
-for m_chirho in modules_chirho {
-    println!("{}: {}", m_chirho.name_chirho, m_chirho.description_chirho);
+// Download + cache the remote catalog. This is the step that actually fetches the
+// module list — init_chirho only registers the source. Returns the module names.
+let modules_chirho = install_mgr_chirho.refresh_source_chirho("CrossWire")?;
+for name_chirho in &modules_chirho {
+    println!("{name_chirho}");
 }
 
-// Install a module
+// Afterwards you can read the cached list without re-downloading:
+// let modules_chirho = install_mgr_chirho.list_remote_modules_chirho("CrossWire")?;
+
+// Install a module (KJV is freely available from CrossWire).
 install_mgr_chirho.install_module_chirho("CrossWire", "KJV")?;
 ```
 

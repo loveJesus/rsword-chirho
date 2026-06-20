@@ -34,19 +34,23 @@
 //! ```rust,ignore
 //! use rsword_chirho::manager_chirho::InstallMgrChirho;
 //!
-//! let mut install_mgr_chirho = InstallMgrChirho::new_chirho();
+//! // new_chirho takes the config/install directory (where modules are stored).
+//! let mut install_mgr_chirho = InstallMgrChirho::new_chirho("/path/to/.sword").unwrap();
 //!
-//! // Initialize and sync with remote sources
+//! // Initialize: creates dirs and registers the default CrossWire source.
 //! install_mgr_chirho.init_chirho().unwrap();
-//! install_mgr_chirho.sync_config_chirho().unwrap();
 //!
-//! // List available modules from a source
-//! let modules_chirho = install_mgr_chirho.get_remote_modules_chirho("CrossWire").unwrap();
-//! for module_chirho in modules_chirho {
-//!     println!("{}: {}", module_chirho.name_chirho, module_chirho.description_chirho);
+//! // Download + cache the remote module list. This is the call that actually fetches
+//! // the catalog (init_chirho only registers the source). Returns `Vec<String>`.
+//! let modules_chirho = install_mgr_chirho.refresh_source_chirho("CrossWire").unwrap();
+//! for name_chirho in &modules_chirho {
+//!     println!("{name_chirho}");
 //! }
 //!
-//! // Install a module
+//! // Subsequent reads can use the cache without re-downloading:
+//! // let modules_chirho = install_mgr_chirho.list_remote_modules_chirho("CrossWire").unwrap();
+//!
+//! // Install a module (KJV is freely available from CrossWire).
 //! install_mgr_chirho.install_module_chirho("CrossWire", "KJV").unwrap();
 //! ```
 //!

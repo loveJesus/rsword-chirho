@@ -320,10 +320,26 @@ impl SwMgrChirho {
         // Strip leading "./" from data path if present
         let clean_data_path_chirho = data_path_chirho.strip_prefix("./").unwrap_or(data_path_chirho);
 
+        // GenBook and lexicon DataPaths end in a file basename, not a directory.
+        let is_file_prefix_chirho = config_chirho.is_genbook_chirho() || config_chirho.is_lexicon_chirho();
+
         // Find which base path contains this module
         for base_path_chirho in &self.mod_paths_chirho {
             let full_path_chirho = base_path_chirho.join(clean_data_path_chirho);
-            if full_path_chirho.exists() {
+            // For file-prefix modules the directory is the parent and is what readers
+            // and tools expect; verify the directory exists before returning it.
+            if is_file_prefix_chirho {
+                if let Some(dir_chirho) = full_path_chirho.parent() {
+                    if dir_chirho.exists() {
+                        // Lexicons load from the directory; genbooks keep the file prefix.
+                        return Some(if config_chirho.is_lexicon_chirho() {
+                            dir_chirho.to_path_buf()
+                        } else {
+                            full_path_chirho
+                        });
+                    }
+                }
+            } else if full_path_chirho.exists() {
                 return Some(full_path_chirho);
             }
         }
@@ -339,16 +355,15 @@ impl SwMgrChirho {
         // Strip leading "./" from data path if present
         let clean_data_path_chirho = data_path_chirho.strip_prefix("./").unwrap_or(data_path_chirho);
 
-        // Check if this is a genbook module (DataPath ends with basename, not directory)
-        let is_genbook_chirho = config_chirho.is_genbook_chirho();
+        // GenBook and lexicon DataPaths end with a file basename, not a directory,
+        // so the module's existence is verified against the parent directory.
+        let is_file_prefix_chirho = config_chirho.is_genbook_chirho() || config_chirho.is_lexicon_chirho();
 
         // Find which base path contains this module
         for base_path_chirho in &self.mod_paths_chirho {
             let full_path_chirho = base_path_chirho.join(clean_data_path_chirho);
 
-            // For genbook modules, check if parent directory exists
-            // For other modules, check if the path itself exists
-            let path_to_check_chirho = if is_genbook_chirho {
+            let path_to_check_chirho = if is_file_prefix_chirho {
                 full_path_chirho.parent().map(|p_chirho| p_chirho.to_path_buf())
             } else {
                 Some(full_path_chirho)

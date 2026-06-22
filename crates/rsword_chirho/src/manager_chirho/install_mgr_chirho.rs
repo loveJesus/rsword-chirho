@@ -6,8 +6,8 @@
 //!
 //! This module is only available on native platforms (requires filesystem
 //! and network access for downloading and extracting module archives).
-
-#![cfg(feature = "native")]
+//!
+//! (The `native` feature gate is applied on the `pub mod` declaration.)
 
 use std::fs::File;
 use std::io::{BufReader, Read};

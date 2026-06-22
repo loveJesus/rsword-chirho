@@ -71,9 +71,11 @@ impl RawLd4Chirho {
             return self.read_by_index_chirho(self.current_index_chirho);
         }
 
-        let key_text_chirho = self.key_chirho.get_text_chirho();
-        self.storage_chirho.find_by_key_chirho(key_text_chirho)?
-            .ok_or_else(|| ErrorChirho::key_not_found_chirho(key_text_chirho))
+        let key_text_chirho = self.key_chirho.get_text_chirho().to_string();
+        super::lookup_with_strongs_fallback_chirho(&key_text_chirho, |k_chirho| {
+            self.storage_chirho.find_by_key_chirho(k_chirho)
+        })?
+        .ok_or_else(|| ErrorChirho::key_not_found_chirho(&key_text_chirho))
     }
 
     /// Read entry by index.

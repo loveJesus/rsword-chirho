@@ -565,21 +565,22 @@ pub fn load_module_chirho(
 
     let full_path_chirho = base_path_chirho.join(clean_data_path_chirho);
 
-    // For GenBook modules, DataPath ends with basename (e.g., "josephus/josephus")
-    // so we check if parent directory exists, not the path itself
+    // GenBook and lexicon DataPaths end with a file basename (e.g. "josephus/josephus"
+    // or "strongsgreek/dict") rather than a directory, so the module directory is the
+    // parent. Bible/commentary DataPaths are the directory itself.
     let is_genbook_chirho = matches!(
         driver_type_chirho,
         ModuleDriverTypeChirho::RawGenBookChirho | ModuleDriverTypeChirho::ZGenBookChirho
     );
+    let is_lexicon_chirho = driver_type_chirho.is_lexicon_chirho();
 
-    let path_to_check_chirho = if is_genbook_chirho {
-        // For genbooks, check if the parent directory exists
+    let module_dir_chirho = if is_genbook_chirho || is_lexicon_chirho {
         full_path_chirho.parent().map(|p_chirho| p_chirho.to_path_buf())
     } else {
         Some(full_path_chirho.clone())
     };
 
-    if let Some(check_path_chirho) = &path_to_check_chirho {
+    if let Some(check_path_chirho) = &module_dir_chirho {
         if !check_path_chirho.exists() {
             return Err(ErrorChirho::InvalidModulePathChirho {
                 path_chirho: check_path_chirho.clone(),
@@ -587,10 +588,19 @@ pub fn load_module_chirho(
         }
     }
 
+    // Lexicon readers (RawLD/zLD) take the module directory and re-derive the file
+    // basename from DataPath. GenBook readers take the file-prefix path as-is, and
+    // Bible/commentary readers take the directory (which equals full_path here).
+    let data_path_chirho = if is_lexicon_chirho {
+        module_dir_chirho.clone().unwrap_or_else(|| full_path_chirho.clone())
+    } else {
+        full_path_chirho.clone()
+    };
+
     Ok(LoadedModuleChirho {
         name_chirho: config_chirho.name_chirho.clone(),
         config_chirho: config_chirho.clone(),
-        data_path_chirho: full_path_chirho,
+        data_path_chirho,
         driver_type_chirho,
     })
 }

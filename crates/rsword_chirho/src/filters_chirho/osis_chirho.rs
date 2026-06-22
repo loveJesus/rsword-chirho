@@ -130,7 +130,7 @@ pub fn extract_interlinear_words_chirho(osis_text_chirho: &str) -> Vec<Interline
             .unwrap_or_default();
         let morphology_chirho = morphology_raw_chirho
             .split(':')
-            .last()
+            .next_back()
             .unwrap_or(&morphology_raw_chirho)
             .to_string();
 

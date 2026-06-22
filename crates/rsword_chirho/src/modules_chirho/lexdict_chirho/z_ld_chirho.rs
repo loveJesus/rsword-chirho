@@ -80,9 +80,11 @@ impl ZLdChirho {
             return self.read_by_index_chirho(self.current_index_chirho);
         }
 
-        let key_text_chirho = self.key_chirho.get_text_chirho();
-        self.storage_chirho.find_by_key_chirho(key_text_chirho)?
-            .ok_or_else(|| ErrorChirho::key_not_found_chirho(key_text_chirho))
+        let key_text_chirho = self.key_chirho.get_text_chirho().to_string();
+        super::lookup_with_strongs_fallback_chirho(&key_text_chirho, |k_chirho| {
+            self.storage_chirho.find_by_key_chirho(k_chirho)
+        })?
+        .ok_or_else(|| ErrorChirho::key_not_found_chirho(&key_text_chirho))
     }
 
     /// Read entry by index.
@@ -254,58 +256,77 @@ mod tests_chirho {
     use std::io::Write;
     use tempfile::TempDir;
 
-    use crate::byte_order_chirho::WriteSwordChirho;
     use crate::compression_chirho::{CompressorChirho, ZipCompressorChirho};
 
+    /// Write a zStr lexicon in the real SWORD on-disk format and return its module.
+    ///
+    /// Layout (single compressed block): the decompressed block is
+    /// `u32 count` + `(u32 offset, u32 size) * count` + the entry texts; the
+    /// `.dat` records are `<key>\r\n` + `u32 block` + `u32 blockIndex`; `.idx`
+    /// is `(u32 datOffset, u32 datSize)`; `.zdx` is `(u32 zdtOffset, u32 csize)`.
     fn create_test_module_chirho() -> (TempDir, ZLdChirho) {
+        // Real Strong's lexicons store zero-padded numeric keys; keys MUST be
+        // sorted for binary-search lookup.
+        let entries_chirho: [(&str, &str); 3] = [
+            ("00026", "agape (ag-ah'-pay) - love"),
+            ("00059", "agorazo - to buy"),
+            ("02316", "theos (theh'-os) - God"),
+        ];
+
         let temp_dir_chirho = TempDir::new().unwrap();
         let mod_path_chirho = temp_dir_chirho.path().join("testzlex");
         fs::create_dir_all(&mod_path_chirho).unwrap();
 
-        // Create compressed test data
-        let compressor_chirho = ZipCompressorChirho::new_chirho();
+        // --- Build the uncompressed block: count + (offset,size) table + data ---
+        let count_chirho = entries_chirho.len() as u32;
+        let table_len_chirho = 4 + entries_chirho.len() * 8;
+        let mut data_chirho: Vec<u8> = Vec::new();
+        let mut table_chirho: Vec<u8> = Vec::new();
+        table_chirho.extend_from_slice(&count_chirho.to_le_bytes());
+        for (_k_chirho, v_chirho) in &entries_chirho {
+            let off_chirho = (table_len_chirho + data_chirho.len()) as u32;
+            let size_chirho = v_chirho.len() as u32;
+            table_chirho.extend_from_slice(&off_chirho.to_le_bytes());
+            table_chirho.extend_from_slice(&size_chirho.to_le_bytes());
+            data_chirho.extend_from_slice(v_chirho.as_bytes());
+        }
+        let mut block_chirho = table_chirho;
+        block_chirho.extend_from_slice(&data_chirho);
 
-        // Block 0: Three lexicon entries
-        let entry1_chirho = "G26\0agape (ag-ah'-pay) - love";
-        let entry2_chirho = "G2316\0theos (theh'-os) - God";
-        let entry3_chirho = "H430\0elohim (el-o-heem') - God";
-
-        // Calculate offsets within block
-        let offset1_chirho = 0u32;
-        let offset2_chirho = (entry1_chirho.len() + 1) as u32; // +1 for null terminator
-        let offset3_chirho = offset2_chirho + (entry2_chirho.len() + 1) as u32;
-
-        let block_text_chirho = format!("{}\0{}\0{}\0", entry1_chirho, entry2_chirho, entry3_chirho);
-        let compressed_chirho = compressor_chirho
-            .compress_chirho(block_text_chirho.as_bytes())
+        let compressed_chirho = ZipCompressorChirho::new_chirho()
+            .compress_chirho(&block_chirho)
             .unwrap();
 
-        // Write data file (.zdt)
-        let mut zdt_file_chirho = File::create(mod_path_chirho.join("testzlex.zdt")).unwrap();
-        zdt_file_chirho.write_all(&compressed_chirho).unwrap();
+        // .zdt: the single compressed block
+        File::create(mod_path_chirho.join("testzlex.zdt"))
+            .unwrap()
+            .write_all(&compressed_chirho)
+            .unwrap();
 
-        // Write block index (.zdx) - 12 bytes per block
-        let mut zdx_file_chirho = File::create(mod_path_chirho.join("testzlex.zdx")).unwrap();
-        zdx_file_chirho.write_u32_sword_chirho(0).unwrap(); // comp_offset
-        zdx_file_chirho.write_u32_sword_chirho(compressed_chirho.len() as u32).unwrap();
-        zdx_file_chirho.write_u32_sword_chirho(block_text_chirho.len() as u32).unwrap();
+        // .zdx: one block record (offset 0, compressed size)
+        let mut zdx_chirho: Vec<u8> = Vec::new();
+        zdx_chirho.extend_from_slice(&0u32.to_le_bytes());
+        zdx_chirho.extend_from_slice(&(compressed_chirho.len() as u32).to_le_bytes());
+        File::create(mod_path_chirho.join("testzlex.zdx")).unwrap().write_all(&zdx_chirho).unwrap();
 
-        // Write entry index (.idx) - 8 bytes per entry: block_num + offset_in_block
-        let mut idx_file_chirho = File::create(mod_path_chirho.join("testzlex.idx")).unwrap();
+        // .dat + .idx: key records and the index pointing at them
+        let mut dat_chirho: Vec<u8> = Vec::new();
+        let mut idx_chirho: Vec<u8> = Vec::new();
+        for (i_chirho, (k_chirho, _v_chirho)) in entries_chirho.iter().enumerate() {
+            let rec_off_chirho = dat_chirho.len() as u32;
+            let mut rec_chirho: Vec<u8> = Vec::new();
+            rec_chirho.extend_from_slice(k_chirho.as_bytes());
+            rec_chirho.extend_from_slice(b"\r\n");
+            rec_chirho.extend_from_slice(&0u32.to_le_bytes()); // block 0
+            rec_chirho.extend_from_slice(&(i_chirho as u32).to_le_bytes()); // index in block
+            idx_chirho.extend_from_slice(&rec_off_chirho.to_le_bytes());
+            idx_chirho.extend_from_slice(&(rec_chirho.len() as u32).to_le_bytes());
+            dat_chirho.extend_from_slice(&rec_chirho);
+            dat_chirho.extend_from_slice(b"\r\n"); // inter-record separator (not counted in size)
+        }
+        File::create(mod_path_chirho.join("testzlex.dat")).unwrap().write_all(&dat_chirho).unwrap();
+        File::create(mod_path_chirho.join("testzlex.idx")).unwrap().write_all(&idx_chirho).unwrap();
 
-        // Entry 0: G26
-        idx_file_chirho.write_u32_sword_chirho(0).unwrap(); // block 0
-        idx_file_chirho.write_u32_sword_chirho(offset1_chirho).unwrap();
-
-        // Entry 1: G2316
-        idx_file_chirho.write_u32_sword_chirho(0).unwrap(); // block 0
-        idx_file_chirho.write_u32_sword_chirho(offset2_chirho).unwrap();
-
-        // Entry 2: H430
-        idx_file_chirho.write_u32_sword_chirho(0).unwrap(); // block 0
-        idx_file_chirho.write_u32_sword_chirho(offset3_chirho).unwrap();
-
-        // Create module config
         let mut config_chirho = ModuleConfigChirho::new_chirho("TestZLex".to_string());
         config_chirho.set_chirho("Description", "Test Compressed Lexicon");
         config_chirho.set_chirho("Lang", "en");
@@ -313,7 +334,6 @@ mod tests_chirho {
         config_chirho.set_chirho("CompressType", "ZIP");
 
         let module_chirho = ZLdChirho::new_chirho(&mod_path_chirho, config_chirho).unwrap();
-
         (temp_dir_chirho, module_chirho)
     }
 
@@ -328,17 +348,30 @@ mod tests_chirho {
     #[test]
     fn test_iterate_entries_chirho() {
         let (_temp_chirho, mut module_chirho) = create_test_module_chirho();
-
         let entries_chirho: Vec<_> = module_chirho.iter_chirho().collect();
         assert_eq!(entries_chirho.len(), 3);
+        assert_eq!(entries_chirho[0].0, "00026");
+        assert!(entries_chirho[0].1.contains("agape"));
     }
 
     #[test]
-    fn test_read_entry_chirho() {
+    fn test_read_entry_by_index_chirho() {
         let (_temp_chirho, mut module_chirho) = create_test_module_chirho();
-
-        // Read first entry by index
         let value_chirho = module_chirho.read_by_index_chirho(0).unwrap();
         assert!(value_chirho.contains("agape"));
+    }
+
+    #[test]
+    fn test_lookup_by_key_chirho() {
+        let (_temp_chirho, mut module_chirho) = create_test_module_chirho();
+        // Exact native (zero-padded) keys.
+        assert!(module_chirho.get_entry_chirho("02316").unwrap().contains("theos"));
+        assert!(module_chirho.get_entry_chirho("00026").unwrap().contains("agape"));
+        // Strong's-style keys resolve via the zero-pad fallback (G/H prefix or bare).
+        assert!(module_chirho.get_entry_chirho("G26").unwrap().contains("agape"));
+        assert!(module_chirho.get_entry_chirho("26").unwrap().contains("agape"));
+        assert!(module_chirho.get_entry_chirho("G2316").unwrap().contains("theos"));
+        // A missing key is a clean error, not a panic or I/O failure.
+        assert!(module_chirho.get_entry_chirho("G9999").is_err());
     }
 }

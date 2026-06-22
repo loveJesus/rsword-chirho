@@ -212,7 +212,7 @@ impl ModuleConfigChirho {
     pub fn is_lexicon_chirho(&self) -> bool {
         matches!(
             self.module_driver_chirho(),
-            Some("RawLD") | Some("RawLD4") | Some("zLD")
+            Some("RawLD") | Some("RawLD4") | Some("zLD") | Some("zLD4")
         )
     }
 

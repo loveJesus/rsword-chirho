@@ -9,7 +9,7 @@ use std::path::PathBuf;
 fn main() {
     // Initialize SwMgr
     let mut mgr_chirho = SwMgrChirho::new_chirho();
-    mgr_chirho.add_path_chirho(&PathBuf::from("/Users/hallelujah/.sword"));
+    mgr_chirho.add_path_chirho(PathBuf::from("/Users/hallelujah/.sword"));
     mgr_chirho.load_modules_chirho().expect("Failed to load modules");
 
     println!("Modules loaded: {}", mgr_chirho.module_count_chirho());

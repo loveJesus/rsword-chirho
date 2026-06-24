@@ -693,7 +693,11 @@ pub fn create_module_chirho(
             let basename_chirho = base_path_chirho.file_name()
                 .and_then(|n| n.to_str())
                 .unwrap_or("module");
-            RawStrChirho::create_chirho(base_path_chirho, basename_chirho)?;
+            let four_byte_chirho = matches!(
+                options_chirho.driver_type_chirho,
+                ModuleDriverTypeChirho::RawLd4Chirho
+            );
+            RawStrChirho::create_chirho(base_path_chirho, basename_chirho, four_byte_chirho)?;
         }
         ModuleDriverTypeChirho::RawGenBookChirho => {
             let basename_chirho = base_path_chirho.file_name()

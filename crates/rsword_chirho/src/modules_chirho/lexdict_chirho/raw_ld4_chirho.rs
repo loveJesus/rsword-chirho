@@ -43,7 +43,7 @@ impl RawLd4Chirho {
             .and_then(|p| p.rsplit('/').next())
             .unwrap_or(&config_chirho.name_chirho);
 
-        let mut storage_chirho = RawStrChirho::open_chirho(&path_chirho, basename_chirho)?;
+        let mut storage_chirho = RawStrChirho::open_chirho(&path_chirho, basename_chirho, true)?;
         let entry_count_chirho = storage_chirho.entry_count_chirho()?;
 
         Ok(Self {

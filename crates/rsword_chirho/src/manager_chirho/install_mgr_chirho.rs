@@ -442,6 +442,25 @@ impl InstallMgrChirho {
         Ok(())
     }
 
+    /// Install a module from a local archive file that is already on disk.
+    ///
+    /// This performs no network access — it simply extracts a SWORD module
+    /// package (a `.zip` containing `mods.d/` + `modules/`) into the install
+    /// path. Use it when a module is too large to download in-app, or must be
+    /// obtained out of band: have the user download the package themselves, then
+    /// point this at the downloaded file.
+    pub fn install_from_file_chirho<P: AsRef<Path>>(&self, archive_path_chirho: P) -> ResultChirho<()> {
+        let archive_path_chirho = archive_path_chirho.as_ref();
+        if !archive_path_chirho.exists() {
+            return Err(ErrorChirho::generic_chirho(format!(
+                "Archive not found: {}",
+                archive_path_chirho.display()
+            )));
+        }
+
+        extract_zip_chirho(archive_path_chirho, &self.install_path_chirho)
+    }
+
     /// Refresh all sources.
     pub fn refresh_all_sources_chirho(&mut self) -> ResultChirho<()> {
         let sources_chirho: Vec<String> = self.get_sources_chirho()

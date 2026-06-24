@@ -43,7 +43,7 @@ impl RawLdChirho {
             .and_then(|p| p.rsplit('/').next())
             .unwrap_or(&config_chirho.name_chirho);
 
-        let mut storage_chirho = RawStrChirho::open_chirho(&path_chirho, basename_chirho)?;
+        let mut storage_chirho = RawStrChirho::open_chirho(&path_chirho, basename_chirho, false)?;
         let entry_count_chirho = storage_chirho.entry_count_chirho()?;
 
         Ok(Self {
@@ -257,7 +257,7 @@ mod tests_chirho {
         let mod_path_chirho = temp_dir_chirho.path().join("testlex");
 
         // Create storage and write some test data
-        let mut storage_chirho = RawStrChirho::create_chirho(&mod_path_chirho, "testlex").unwrap();
+        let mut storage_chirho = RawStrChirho::create_chirho(&mod_path_chirho, "testlex", false).unwrap();
 
         // Write some lexicon entries
         storage_chirho.write_entry_chirho("G2316", "theos (theh'-os) - God").unwrap();

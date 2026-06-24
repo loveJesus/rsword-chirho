@@ -45,7 +45,7 @@ impl GlossaryChirho {
         path_chirho: P,
         basename_chirho: &str,
     ) -> ResultChirho<Self> {
-        let primary_storage_chirho = RawStrChirho::open_chirho(path_chirho, basename_chirho)?;
+        let primary_storage_chirho = RawStrChirho::open_chirho(path_chirho, basename_chirho, false)?;
 
         // Get language codes from config
         let source_lang_chirho = config_chirho

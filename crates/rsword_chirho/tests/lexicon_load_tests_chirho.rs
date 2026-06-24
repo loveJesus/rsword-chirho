@@ -103,3 +103,70 @@ fn test_swmgr_loads_and_reads_zld_lexicon_chirho() {
     assert!(module_chirho.read_entry_chirho("26").unwrap().contains("agape"));
     assert!(module_chirho.read_entry_chirho("G2316").unwrap().contains("theos"));
 }
+
+/// Write an uncompressed RawLD module (`<base>/modules/lexdict/rawld/<dir>/<basename>.*`)
+/// plus its conf, in SWORD's real format: 6-byte index records (`u32 offset` +
+/// `u16 size`) and `<key>\r\n<value>` data records. Daily devotionals are stored
+/// exactly this way (keyed by `MM.DD`).
+fn write_rawld_module_chirho(
+    base_chirho: &Path,
+    name_chirho: &str,
+    basename_chirho: &str,
+    entries_chirho: &[(&str, &str)],
+) {
+    let dir_chirho = base_chirho.join("modules/lexdict/rawld").join(name_chirho.to_lowercase());
+    fs::create_dir_all(&dir_chirho).unwrap();
+    fs::create_dir_all(base_chirho.join("mods.d")).unwrap();
+
+    let mut dat_chirho: Vec<u8> = Vec::new();
+    let mut idx_chirho: Vec<u8> = Vec::new();
+    for (k_chirho, v_chirho) in entries_chirho {
+        let off_chirho = dat_chirho.len() as u32;
+        let mut rec_chirho = k_chirho.as_bytes().to_vec();
+        rec_chirho.extend_from_slice(b"\r\n");
+        rec_chirho.extend_from_slice(v_chirho.as_bytes());
+        idx_chirho.extend_from_slice(&off_chirho.to_le_bytes());
+        idx_chirho.extend_from_slice(&(rec_chirho.len() as u16).to_le_bytes()); // 6-byte records
+        dat_chirho.extend_from_slice(&rec_chirho);
+    }
+    fs::write(dir_chirho.join(format!("{}.dat", basename_chirho)), &dat_chirho).unwrap();
+    fs::write(dir_chirho.join(format!("{}.idx", basename_chirho)), &idx_chirho).unwrap();
+
+    let conf_chirho = format!(
+        "[{name}]\nDataPath=./modules/lexdict/rawld/{lower}/{base}\nModDrv=RawLD\n\
+         Lang=en\nEncoding=UTF-8\nSourceType=Plain\nFeature=DailyDevotion\n\
+         Description=Test Daily Devotional\n",
+        name = name_chirho,
+        lower = name_chirho.to_lowercase(),
+        base = basename_chirho,
+    );
+    fs::write(base_chirho.join("mods.d").join(format!("{}.conf", name_chirho.to_lowercase())), conf_chirho).unwrap();
+}
+
+#[test]
+fn test_swmgr_loads_and_reads_rawld_devotional_chirho() {
+    let temp_chirho = tempfile::TempDir::new().unwrap();
+    let base_chirho = temp_chirho.path();
+
+    // Date-keyed entries (MM.DD), sorted, as a real daily devotional stores them.
+    let entries_chirho = [
+        ("01.01", "<i>Morning</i> reading for the new year"),
+        ("06.15", "<i>Evening</i> reading at midsummer"),
+        ("12.25", "<i>Morning</i> reading for the Nativity"),
+    ];
+    write_rawld_module_chirho(base_chirho, "TestDevo", "devo", &entries_chirho);
+
+    let mut mgr_chirho = SwMgrChirho::new_chirho();
+    mgr_chirho.add_path_chirho(base_chirho);
+    mgr_chirho.load_modules_chirho().unwrap();
+
+    let module_chirho = mgr_chirho
+        .load_module_chirho("TestDevo")
+        .expect("RawLD devotional should load via SwMgr");
+    assert!(module_chirho.driver_type_chirho.is_lexicon_chirho());
+
+    // Reading by date key returns the devotional text (was "failed to fill whole buffer").
+    assert!(module_chirho.read_entry_chirho("01.01").unwrap().contains("new year"));
+    assert!(module_chirho.read_entry_chirho("12.25").unwrap().contains("Nativity"));
+    assert!(module_chirho.read_entry_chirho("06.15").unwrap().contains("midsummer"));
+}

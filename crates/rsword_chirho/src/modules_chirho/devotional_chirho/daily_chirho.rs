@@ -38,7 +38,7 @@ impl DailyDevotionalChirho {
         path_chirho: P,
         basename_chirho: &str,
     ) -> ResultChirho<Self> {
-        let storage_chirho = RawStrChirho::open_chirho(path_chirho, basename_chirho)?;
+        let storage_chirho = RawStrChirho::open_chirho(path_chirho, basename_chirho, false)?;
         let key_chirho = DateKeyChirho::new_chirho();
 
         Ok(Self {

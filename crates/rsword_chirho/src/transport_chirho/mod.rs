@@ -166,6 +166,17 @@ impl TransportChirho for HttpTransportChirho {
     }
 }
 
+/// Upper bound for an in-memory [`TransportChirho::fetch_chirho`] body.
+///
+/// `fetch_chirho` buffers the whole response in RAM, so it is used for small
+/// metadata (remote catalogs, `.conf` files) — never module archives, which
+/// stream to disk in [`UreqTransportChirho::download_chirho`]. ureq's
+/// `read_to_vec()` defaults to a 10 MB cap; we raise it well past any real
+/// catalog while still bounding memory so a hostile/misbehaving server cannot
+/// exhaust the client's RAM.
+#[cfg(feature = "native")]
+const MAX_FETCH_BYTES_CHIRHO: u64 = 64 * 1024 * 1024;
+
 /// Lightweight HTTP transport using ureq (no async runtime needed).
 ///
 /// This provides a pure Rust HTTP client without requiring external tools
@@ -203,11 +214,17 @@ impl TransportChirho for UreqTransportChirho {
             return Err(ErrorChirho::network_chirho(format!("HTTP error: {}", status_chirho)));
         }
 
-        let bytes_chirho = response_chirho.into_body()
-            .read_to_vec()
+        // Stream the body straight to disk. ureq's convenience `read_to_vec()`
+        // caps the response at 10 MB (`MAX_BODY_SIZE`), which silently broke any
+        // module larger than that (e.g. MHC ~30 MB → "the response body is larger
+        // than request limit: 10485760"). `into_reader()` is unbounded, and
+        // copying it in fixed-size chunks keeps peak memory flat regardless of
+        // module size — important on mobile where a module may be hundreds of MB.
+        let mut reader_chirho = response_chirho.into_body().into_reader();
+        let mut file_chirho = std::fs::File::create(dest_chirho)?;
+        std::io::copy(&mut reader_chirho, &mut file_chirho)
             .map_err(|e_chirho| ErrorChirho::network_chirho(format!("Failed to read response: {}", e_chirho)))?;
 
-        std::fs::write(dest_chirho, &bytes_chirho)?;
         Ok(())
     }
 
@@ -221,7 +238,13 @@ impl TransportChirho for UreqTransportChirho {
             return Err(ErrorChirho::network_chirho(format!("HTTP error: {}", status_chirho)));
         }
 
-        let bytes_chirho = response_chirho.into_body()
+        // Metadata fetch buffers in RAM; raise ureq's default 10 MB `read_to_vec()`
+        // cap to `MAX_FETCH_BYTES_CHIRHO` so a large catalog still loads while
+        // memory stays bounded. (Module archives download via `download_chirho`.)
+        let mut body_chirho = response_chirho.into_body();
+        let bytes_chirho = body_chirho
+            .with_config()
+            .limit(MAX_FETCH_BYTES_CHIRHO)
             .read_to_vec()
             .map_err(|e_chirho| ErrorChirho::network_chirho(format!("Failed to read response: {}", e_chirho)))?;
 

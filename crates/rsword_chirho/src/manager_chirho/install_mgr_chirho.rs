@@ -169,6 +169,34 @@ impl InstallMgrChirho {
         Ok(modules_chirho)
     }
 
+    /// List available modules from a source **with full metadata** — name,
+    /// version, description, language and driver type — in a single call.
+    ///
+    /// This is the ergonomic counterpart to [`list_remote_modules_chirho`],
+    /// which returns names only (leaving a caller to guess or issue an N+1
+    /// [`get_remote_module_info_chirho`] per module just to show a description).
+    /// Call [`refresh_source_chirho`] first to populate the local cache. Any
+    /// module whose `.conf` fails to parse is skipped rather than failing the
+    /// whole listing.
+    ///
+    /// [`list_remote_modules_chirho`]: Self::list_remote_modules_chirho
+    /// [`get_remote_module_info_chirho`]: Self::get_remote_module_info_chirho
+    /// [`refresh_source_chirho`]: Self::refresh_source_chirho
+    pub fn list_remote_module_infos_chirho(
+        &self,
+        source_name_chirho: &str,
+    ) -> ResultChirho<Vec<ModuleInfoChirho>> {
+        let mut infos_chirho = Vec::new();
+        for name_chirho in self.list_remote_modules_chirho(source_name_chirho)? {
+            if let Ok(info_chirho) =
+                self.get_remote_module_info_chirho(source_name_chirho, &name_chirho)
+            {
+                infos_chirho.push(info_chirho);
+            }
+        }
+        Ok(infos_chirho)
+    }
+
     /// Install a module from a source.
     pub fn install_module_chirho(
         &self,
@@ -619,5 +647,50 @@ mod tests_chirho {
         // Check that config was saved
         let conf_path_chirho = temp_dir_chirho.path().join("InstallMgr.conf");
         assert!(conf_path_chirho.exists());
+    }
+
+    /// The batch listing must return descriptions/versions, not just names —
+    /// this is the gap that forced callers to hard-code an empty description.
+    /// We synthesize an already-refreshed cache (the same `remote_mods.d/<src>/
+    /// mods.d/*.conf` layout `refresh_source_chirho` extracts) so the test needs
+    /// no network.
+    #[test]
+    fn test_list_remote_module_infos_populates_descriptions_chirho() {
+        let temp_dir_chirho = TempDir::new().unwrap();
+        let mgr_chirho = InstallMgrChirho::new_chirho(temp_dir_chirho.path()).unwrap();
+
+        let cache_chirho = temp_dir_chirho
+            .path()
+            .join("remote_mods.d")
+            .join("CrossWire")
+            .join("mods.d");
+        std::fs::create_dir_all(&cache_chirho).unwrap();
+        std::fs::write(
+            cache_chirho.join("kjv.conf"),
+            "[KJV]\nDescription=King James Version (1769)\nVersion=3.1\nLang=en\nModDrv=zText\n",
+        )
+        .unwrap();
+        std::fs::write(
+            cache_chirho.join("mhc.conf"),
+            "[MHC]\nDescription=Matthew Henry Commentary\nVersion=2.2\nLang=en\nModDrv=zCom4\n",
+        )
+        .unwrap();
+
+        let infos_chirho = mgr_chirho
+            .list_remote_module_infos_chirho("CrossWire")
+            .unwrap();
+        assert_eq!(infos_chirho.len(), 2);
+        // Every entry carries a non-empty description (the whole point).
+        assert!(infos_chirho
+            .iter()
+            .all(|i_chirho| !i_chirho.description_chirho.is_empty()));
+
+        let kjv_chirho = infos_chirho
+            .iter()
+            .find(|i_chirho| i_chirho.name_chirho == "KJV")
+            .expect("KJV present");
+        assert_eq!(kjv_chirho.version_chirho, "3.1");
+        assert!(kjv_chirho.description_chirho.contains("King James"));
+        assert_eq!(kjv_chirho.module_type_chirho, "zText");
     }
 }

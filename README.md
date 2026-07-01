@@ -162,3 +162,5 @@ This project is licensed under the GPL-2.0-or-later license, maintaining compati
 ---
 
 *"Thy word is a lamp unto my feet, and a light unto my path."* — Psalm 119:105
+
+Tauri integration

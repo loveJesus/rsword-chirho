@@ -76,6 +76,7 @@ struct ArgsChirho {
 
 /// Validation issue severity.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[expect(clippy::enum_variant_names, reason = "the project's naming convention suffixes every identifier, including variants, with Chirho")]
 enum SeverityChirho {
     /// Informational message.
     InfoChirho,

@@ -71,9 +71,9 @@ fn run_chirho(args_chirho: ArgsChirho) -> Result<(), Box<dyn std::error::Error>>
         .unwrap_or("dict");
 
     let mut storage_chirho = if args_chirho.append_chirho && args_chirho.output_path_chirho.exists() {
-        RawStrChirho::open_chirho(&args_chirho.output_path_chirho, basename_chirho)?
+        RawStrChirho::open_chirho(&args_chirho.output_path_chirho, basename_chirho, false)?
     } else {
-        RawStrChirho::create_chirho(&args_chirho.output_path_chirho, basename_chirho)?
+        RawStrChirho::create_chirho(&args_chirho.output_path_chirho, basename_chirho, false)?
     };
 
     // Sort entries by key for proper binary search

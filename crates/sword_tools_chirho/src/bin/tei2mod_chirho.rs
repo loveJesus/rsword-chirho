@@ -74,7 +74,7 @@ fn run_chirho(args_chirho: ArgsChirho) -> Result<(), Box<dyn std::error::Error>>
         .and_then(|n| n.to_str())
         .unwrap_or("dict");
 
-    let mut storage_chirho = RawStrChirho::create_chirho(&args_chirho.output_path_chirho, basename_chirho)?;
+    let mut storage_chirho = RawStrChirho::create_chirho(&args_chirho.output_path_chirho, basename_chirho, args_chirho.four_byte_chirho)?;
 
     // Sort entries by key
     let mut entries_sorted_chirho = entries_chirho;
@@ -100,11 +100,17 @@ fn run_chirho(args_chirho: ArgsChirho) -> Result<(), Box<dyn std::error::Error>>
     fs::create_dir_all(&conf_path_chirho)?;
 
     let module_name_chirho = basename_chirho;
+    // -4 writes 8-byte index records, which SWORD reads as RawLD4.
+    let (driver_chirho, driver_dir_chirho) = if args_chirho.four_byte_chirho {
+        ("RawLD4", "rawld4")
+    } else {
+        ("RawLD", "rawld")
+    };
 
     let conf_content_chirho = format!(
         r#"[{}]
-DataPath=./modules/lexdict/rawld/{}/
-ModDrv=RawLD
+DataPath=./modules/lexdict/{}/{}/
+ModDrv={}
 SourceType=TEI
 Encoding=UTF-8
 Lang=en
@@ -112,7 +118,9 @@ Description=Imported TEI lexicon
 About=Created by tei2mod_chirho from rsword-chirho
 "#,
         module_name_chirho,
-        module_name_chirho
+        driver_dir_chirho,
+        module_name_chirho,
+        driver_chirho
     );
 
     let conf_file_path_chirho = conf_path_chirho.join(format!("{}.conf", module_name_chirho.to_lowercase()));

@@ -62,7 +62,7 @@ fn run_chirho(args_chirho: ArgsChirho) -> Result<(), Box<dyn std::error::Error>>
         .and_then(|n| n.to_str())
         .unwrap_or("book");
 
-    let mut storage_chirho = RawStrChirho::create_chirho(&args_chirho.output_path_chirho, basename_chirho)?;
+    let mut storage_chirho = RawStrChirho::create_chirho(&args_chirho.output_path_chirho, basename_chirho, false)?;
 
     let mut count_chirho = 0u32;
 

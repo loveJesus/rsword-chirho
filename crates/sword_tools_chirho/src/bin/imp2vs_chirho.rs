@@ -18,6 +18,9 @@ use rsword_chirho::import_chirho::parse_imp_chirho;
 use rsword_chirho::storage_chirho::RawVerseChirho;
 use rsword_chirho::versification_chirho::{kjv_chirho, TestamentChirho, VersificationChirho};
 
+#[path = "../writer_checks_chirho.rs"]
+mod writer_checks_chirho;
+
 /// Create Bible module from IMP format.
 #[derive(Parser, Debug)]
 #[command(name = "imp2vs_chirho")]
@@ -30,7 +33,7 @@ struct ArgsChirho {
     /// Input IMP file
     imp_file_chirho: PathBuf,
 
-    /// Versification system
+    /// Versification system (only KJV in this release; others are refused)
     #[arg(short = 'v', long, default_value = "KJV")]
     versification_chirho: String,
 
@@ -55,6 +58,7 @@ fn main() {
 }
 
 fn run_chirho(args_chirho: ArgsChirho) -> Result<(), Box<dyn std::error::Error>> {
+    writer_checks_chirho::require_kjv_chirho(&args_chirho.versification_chirho)?;
     // Read the IMP file
     let content_chirho = fs::read_to_string(&args_chirho.imp_file_chirho)?;
     let entries_chirho = parse_imp_chirho(&content_chirho);
@@ -113,6 +117,7 @@ fn run_chirho(args_chirho: ArgsChirho) -> Result<(), Box<dyn std::error::Error>>
     if error_count_chirho > 0 {
         println!("Skipped {} entries with unparseable keys.", error_count_chirho);
     }
+    writer_checks_chirho::require_imported_chirho(count_chirho, &args_chirho.imp_file_chirho)?;
 
     // Create a basic config file
     let conf_path_chirho = args_chirho.output_path_chirho.parent()

@@ -4,7 +4,8 @@
 
 //! diatheke_chirho - Bible text lookup and search tool.
 //!
-//! Drop-in replacement for the SWORD diatheke command.
+//! Bible lookup and search modeled on SWORD's diatheke. Its arguments and output differ from diatheke's;
+//! the README's Compatibility section gives the measured state.
 //!
 //! Usage:
 //!   diatheke_chirho -b KJV -k "John 3:16"

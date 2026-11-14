@@ -8,6 +8,7 @@ Notable changes to `rsword_chirho` and `sword_tools_chirho`. The format follows 
 
 ### Fixed
 
+- `vpl2mod_chirho -r` reads its references. Before, it split no line, imported no verses and still exited successfully.
 - Compressed lexicons and dictionaries (zLD, zLD4) now open and read through `SwMgrChirho`. The loader resolves a lexicon's data path to its directory, as it already did for general books, and the zStr reader follows SWORD's real layout (`.idx` to `.dat` to `.zdx` to a compressed block) instead of failing with "corrupt deflate stream".
 - Uncompressed lexicons (RawLD, RawLD4) read real modules. RawLD uses 6-byte index records and RawLD4 8-byte records, and entries split on the newline SWORD writes. RawLD daily devotionals such as "Daily" no longer fail with "failed to fill whole buffer".
 - Module downloads larger than 10 MB complete. `download_chirho` streams the response to disk instead of buffering it, so memory stays flat, and catalog fetches allow up to 64 MB.
@@ -18,6 +19,13 @@ Notable changes to `rsword_chirho` and `sword_tools_chirho`. The format follows 
 - `InstallMgrChirho::install_from_file_chirho` installs a module from a local `.zip` already on disk.
 - `InstallMgrChirho::list_remote_module_infos_chirho` lists a source's modules with name, version, description, language and driver in one call.
 - Strong's lookups in lexicons accept `G25`, `25` and `00025` alike, through a zero-padded fallback; word-keyed dictionaries are unchanged.
+
+### Changed
+
+- `imp2gbs_chirho` and `mod2zmod_chirho` exit with an error and write nothing. Neither SWORD nor rsword could open their output: `imp2gbs_chirho` wrote a lexicon instead of a general book, and `mod2zmod_chirho` wrote a conf with no data behind it.
+- `osis2mod_chirho` refuses `-z`, which wrote uncompressed data under a zText conf. `osis2mod_chirho`, `imp2vs_chirho` and `vpl2mod_chirho` refuse versifications other than KJV, which they never applied.
+- Every writer exits with an error when it imports nothing, before writing a conf.
+- The READMEs no longer call the tools drop-in replacements. A Compatibility section gives the state measured against SWORD 1.9.0 on 2026-11-14, and the format table no longer claims the library writes compressed formats.
 
 ### Notes
 

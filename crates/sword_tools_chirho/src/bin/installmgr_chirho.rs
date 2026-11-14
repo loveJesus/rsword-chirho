@@ -4,7 +4,7 @@
 
 //! installmgr_chirho - SWORD module installation manager.
 //!
-//! Drop-in replacement for the SWORD installmgr command.
+//! Module installation and management modeled on SWORD's installmgr. It has not been compared with installmgr.
 //!
 //! Usage:
 //!   installmgr_chirho -init

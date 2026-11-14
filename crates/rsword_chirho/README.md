@@ -6,7 +6,7 @@ Pure Rust port of the SWORD Bible software library.
 
 ## Features
 
-- **Full SWORD compatibility**: Read all standard SWORD module binary formats
+- **SWORD module formats**: reads the standard SWORD module binary formats; the [Compatibility section](https://github.com/loveJesus/rsword-chirho#compatibility) gives what has been measured against SWORD
 - **Multiple module types**: Bibles, commentaries, lexicons, general books, devotionals
 - **Compression support**: zlib, bzip2, and xz compression
 - **Full-text search**: Tantivy-based indexed search with regex fallback

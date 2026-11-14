@@ -6,9 +6,10 @@
 //!
 //! Pure Rust port of the SWORD Bible software library.
 //!
-//! This crate provides full compatibility with SWORD module binary formats,
-//! including reading and writing Bible texts, commentaries, lexicons, and
-//! general books.
+//! This crate reads SWORD module binary formats (Bible texts, commentaries,
+//! lexicons and general books) and writes the uncompressed Bible, commentary
+//! and lexicon formats. The repository README's Compatibility section gives
+//! what has been measured against SWORD.
 //!
 //! ## Quick Start
 //!

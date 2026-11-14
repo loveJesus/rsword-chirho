@@ -2,7 +2,7 @@
 
 > *"For God so loved the world that he gave his only begotten Son, that whoever believes in him should not perish but have eternal life."* — John 3:16
 
-A pure Rust implementation of the SWORD Bible software library, providing full compatibility with SWORD module binary formats and drop-in CLI replacements for diatheke, installmgr, and other SWORD tools.
+A pure Rust implementation of the SWORD Bible software library. It reads SWORD module binary formats and includes command-line tools modeled on diatheke, installmgr, osis2mod and the other SWORD utilities. The tools are not drop-in replacements; [Compatibility](#compatibility) gives what has been measured.
 
 ## The Gospel
 
@@ -16,24 +16,28 @@ If you confess with your mouth the Lord Jesus and believe in your heart that God
 
 ## Features
 
-- **Full SWORD Format Compatibility**: Read and write all major SWORD module formats
+- **SWORD module formats**: reads the formats below and writes the uncompressed ones (see [Module Format Support](#module-format-support))
   - RawText, RawText4 (uncompressed Bible modules)
   - zText, zText4 (compressed Bible modules with zlib, bzip2, or xz)
   - RawCom, zCom (commentary modules)
   - RawLD, zLD (lexicon/dictionary modules)
   - RawGenBook (general book modules)
 
-- **Drop-in CLI Replacements**:
+- **CLI tools** modeled on the SWORD utilities (see [Compatibility](#compatibility)):
   - `diatheke_chirho` - Bible text lookup and search
   - `installmgr_chirho` - Module installation and management
   - `osis2mod_chirho`, `tei2mod_chirho` - Create modules from OSIS/TEI XML
   - `mod2imp_chirho`, `mod2osis_chirho` - Export modules to IMP/OSIS
-  - `mod2zmod_chirho` - Compress modules
+  - `mod2zmod_chirho` - Compress modules (not available in this release)
   - And more...
 
 - **Pure Rust**: No C/C++ dependencies, cross-platform, memory-safe
 
 - **Tantivy Search**: Fast full-text search using Tantivy instead of CLucene
+
+## Compatibility
+
+Measured on 2026-11-14 against SWORD 1.9.0 (diatheke 4.8). The tools are modeled on the SWORD utilities but are not drop-in replacements. None of 131 diatheke invocations compared with `diatheke_chirho` gave identical output, and `imp2gbs_chirho` and `mod2zmod_chirho` are not available in this release. SWORD reads the Bible modules written by `osis2mod_chirho`, `imp2vs_chirho` and `vpl2mod_chirho`, and the lexicons written by `imp2ld_chirho`. The state of each tool is in the [sword_tools_chirho README](crates/sword_tools_chirho/README.md#compatibility).
 
 ## Installation
 
@@ -125,12 +129,14 @@ rsword-chirho/
 |--------|------|-------|-------------|
 | RawText | Yes | Yes | Uncompressed Bible (6-byte index) |
 | RawText4 | Yes | Yes | Uncompressed Bible (8-byte index) |
-| zText | Yes | Yes | Compressed Bible |
+| zText | Yes | No | Compressed Bible |
 | RawCom | Yes | Yes | Uncompressed Commentary |
-| zCom | Yes | Yes | Compressed Commentary |
+| zCom | Yes | No | Compressed Commentary |
 | RawLD | Yes | Yes | Uncompressed Lexicon |
-| zLD | Yes | Yes | Compressed Lexicon |
+| zLD | Yes | No | Compressed Lexicon |
 | RawGenBook | Planned | Planned | General Books |
+
+Write means the library can write the format. The command-line tools write RawText, RawLD and RawLD4.
 
 ## Versification Systems
 

@@ -30,7 +30,7 @@ struct ArgsChirho {
     /// Input TEI XML file
     tei_file_chirho: PathBuf,
 
-    /// Compression type
+    /// Compression type (ignored in this release; an uncompressed lexicon is written)
     #[arg(short = 'z', long)]
     compress_chirho: Option<String>,
 
@@ -63,7 +63,9 @@ fn run_chirho(args_chirho: ArgsChirho) -> Result<(), Box<dyn std::error::Error>>
     let entries_chirho = parse_tei_chirho(&content_chirho)?;
 
     if entries_chirho.is_empty() {
-        return Err("No entries found in TEI file".into());
+        return Err("No <entry n=\"...\"> elements found in the TEI file; <entryFree> and <superentry> are not read in this release. \
+                    Nothing was written."
+            .into());
     }
 
     println!("Found {} entries", entries_chirho.len());

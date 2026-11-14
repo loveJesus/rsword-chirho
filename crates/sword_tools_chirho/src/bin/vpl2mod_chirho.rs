@@ -10,7 +10,7 @@
 //!
 //! Usage:
 //!   vpl2mod_chirho ./modules/texts/rawtext/mymod verses.txt
-//!   vpl2mod_chirho -v Catholic ./modules/texts/rawtext/mymod verses.txt
+//!   vpl2mod_chirho -r ./modules/texts/rawtext/mymod verses-with-references.txt
 
 use clap::Parser;
 use std::fs;
@@ -19,6 +19,9 @@ use std::path::PathBuf;
 
 use rsword_chirho::storage_chirho::RawVerseChirho;
 use rsword_chirho::versification_chirho::{kjv_chirho, TestamentChirho, VersificationChirho};
+
+#[path = "../writer_checks_chirho.rs"]
+mod writer_checks_chirho;
 
 /// Create module from verse-per-line format.
 #[derive(Parser, Debug)]
@@ -32,7 +35,7 @@ struct ArgsChirho {
     /// Input VPL file
     vpl_file_chirho: PathBuf,
 
-    /// Versification system
+    /// Versification system (only KJV in this release; others are refused)
     #[arg(short = 'v', long, default_value = "KJV")]
     versification_chirho: String,
 
@@ -57,6 +60,7 @@ fn main() {
 }
 
 fn run_chirho(args_chirho: ArgsChirho) -> Result<(), Box<dyn std::error::Error>> {
+    writer_checks_chirho::require_kjv_chirho(&args_chirho.versification_chirho)?;
     println!("Creating module at: {:?}", args_chirho.output_path_chirho);
     println!("From VPL file: {:?}", args_chirho.vpl_file_chirho);
     println!("Versification: {}", args_chirho.versification_chirho);
@@ -146,6 +150,7 @@ fn run_chirho(args_chirho: ArgsChirho) -> Result<(), Box<dyn std::error::Error>>
     if error_count_chirho > 0 {
         println!("Skipped {} lines.", error_count_chirho);
     }
+    writer_checks_chirho::require_imported_chirho(count_chirho, &args_chirho.vpl_file_chirho)?;
 
     // Create a basic config file
     let conf_path_chirho = args_chirho.output_path_chirho.parent()
@@ -179,15 +184,25 @@ About=Created by vpl2mod_chirho from rsword-chirho
     Ok(())
 }
 
-/// Parse a line with a reference prefix.
+/// Parse a line with a reference prefix ("Gen 1:1 In the beginning...", "1 John 3:16 Hereby...").
+/// As in SWORD's vpl2mod, the reference ends at the first whitespace after a letter, a chapter number,
+/// a colon and a verse number, in that order.
 fn parse_referenced_line_chirho(line_chirho: &str) -> Option<(String, String)> {
-    // Try to find a verse reference pattern at the start
-    // Format: "Gen 1:1 In the beginning..."
-    let parts_chirho: Vec<&str> = line_chirho.splitn(2, |c: char| c.is_whitespace() && line_chirho[..line_chirho.find(c).unwrap()].contains(':'))
-        .collect();
-
-    if parts_chirho.len() == 2 {
-        return Some((parts_chirho[0].trim().to_string(), parts_chirho[1].trim().to_string()));
+    let mut stage_chirho = 0u8;
+    for (at_chirho, char_chirho) in line_chirho.char_indices() {
+        stage_chirho = match (stage_chirho, char_chirho) {
+            (0, _) if char_chirho.is_alphabetic() => 1,
+            (1, _) if char_chirho.is_ascii_digit() => 2,
+            (2, ':') => 3,
+            (3, _) if char_chirho.is_ascii_digit() => 4,
+            (4, _) if char_chirho.is_whitespace() => {
+                return Some((line_chirho[..at_chirho].trim().to_string(), line_chirho[at_chirho..].trim().to_string()));
+            }
+            (unchanged_chirho, _) => unchanged_chirho,
+        };
+    }
+    if stage_chirho == 4 {
+        return Some((line_chirho.trim().to_string(), String::new()));
     }
 
     // Alternative: look for tab separator
@@ -293,3 +308,7 @@ impl<'a> VerseIteratorChirho<'a> {
         }
     }
 }
+
+#[cfg(test)]
+#[path = "../unit_tests_chirho/vpl2mod_parse_tests_chirho.rs"]
+mod tests_chirho;

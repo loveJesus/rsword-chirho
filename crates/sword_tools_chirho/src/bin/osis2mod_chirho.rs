@@ -9,7 +9,9 @@
 //!
 //! Usage:
 //!   osis2mod_chirho ./modules/texts/rawtext/mymod Bible.xml
-//!   osis2mod_chirho -z ZIP ./modules/texts/ztext/mymod Bible.xml
+//!
+//! This release writes uncompressed RawText modules in KJV versification only: `-z` and any other
+//! versification are refused before anything is written, and `-4` is ignored.
 
 use clap::Parser;
 use quick_xml::events::Event;
@@ -19,6 +21,9 @@ use std::path::PathBuf;
 
 use rsword_chirho::storage_chirho::RawVerseChirho;
 use rsword_chirho::versification_chirho::{kjv_chirho, TestamentChirho, VersificationChirho};
+
+#[path = "../writer_checks_chirho.rs"]
+mod writer_checks_chirho;
 
 /// Type alias for verse data: (testament, verse_index, text)
 type VerseDataChirho = (TestamentChirho, u32, String);
@@ -35,11 +40,11 @@ struct ArgsChirho {
     /// Input OSIS XML file
     osis_file_chirho: PathBuf,
 
-    /// Versification system
+    /// Versification system (only KJV in this release; others are refused)
     #[arg(short = 'v', long, default_value = "KJV")]
     versification_chirho: String,
 
-    /// Compression type (ZIP, BZIP2, XZ, LZSS)
+    /// Compression type (not available in this release; refused)
     #[arg(short = 'z', long)]
     compress_chirho: Option<String>,
 
@@ -51,7 +56,7 @@ struct ArgsChirho {
     #[arg(short = 'c', long)]
     cipher_key_chirho: Option<String>,
 
-    /// Use 4-byte index
+    /// Use 4-byte index (ignored in this release; RawText is written)
     #[arg(short = '4', long)]
     four_byte_chirho: bool,
 
@@ -72,6 +77,12 @@ fn main() {
 }
 
 fn run_chirho(args_chirho: ArgsChirho) -> Result<(), Box<dyn std::error::Error>> {
+    if args_chirho.compress_chirho.is_some() {
+        return Err("Compression (-z) is not available in this release: the data would be written uncompressed under a zText conf \
+                    that no reader can open. Nothing was written; run without -z for a RawText module."
+            .into());
+    }
+    writer_checks_chirho::require_kjv_chirho(&args_chirho.versification_chirho)?;
     println!("Creating module at: {:?}", args_chirho.output_path_chirho);
     println!("From OSIS file: {:?}", args_chirho.osis_file_chirho);
     println!("Versification: {}", args_chirho.versification_chirho);
@@ -108,6 +119,7 @@ fn run_chirho(args_chirho: ArgsChirho) -> Result<(), Box<dyn std::error::Error>>
     }
 
     println!("Done. Imported {} verses.", count_chirho);
+    writer_checks_chirho::require_imported_chirho(count_chirho, &args_chirho.osis_file_chirho)?;
 
     // Create config file
     let conf_path_chirho = args_chirho.output_path_chirho.parent()
